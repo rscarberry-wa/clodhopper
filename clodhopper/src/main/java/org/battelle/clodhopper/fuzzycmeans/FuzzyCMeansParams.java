@@ -33,10 +33,22 @@ public class FuzzyCMeansParams {
 		clusterSeeder = new KMeansPlusPlusSeeder(distanceMetric);
 	}
 	
+	/**
+	 * Get the number of requested clusters.
+	 * 
+	 * @return
+	 */
 	public int getClusterCount() {
 		return clusterCount;
 	}
 	
+	/**
+	 * Set the number of requested clusters.
+	 * 
+	 * @param n the number desired
+	 * 
+	 * @throws IllegalArgumentException if n is not a positive integer.
+	 */
 	public void setClusterCount(int n) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("cluster count must be greater than 0");

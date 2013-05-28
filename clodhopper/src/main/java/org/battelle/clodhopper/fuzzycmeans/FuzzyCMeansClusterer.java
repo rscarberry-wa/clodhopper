@@ -47,17 +47,29 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
 	// Synchronization object for changing degreesOfMembership
 	private Object mfLock = new Object();
 
+	// The degrees of membership for every tuple to every cluster.  
+	// Of dimensions [tupleCount][clusterCount]
 	private double[][] degreesOfMembership;
+	// The cluster centers.  Of dimensions [clusterCount][tupleLength]
 	private double[][] clusterCenters;
 
+	// The workers that update the degrees of membership
 	private List<DegreesOfMembershipUpdater> domUpdaters;
+	// The workers that update the cluster centers
 	private List<ClusterCenterUpdater> centerUpdaters;
+	// The workers that recompute the error after each iteration
 	private List<ErrorCalculator> errorCalculators;
 
+	// The thread pool.  Non-null only when using multiple threads
 	private ExecutorService threadPool;
 
+	// This may seem redundant, since the params has a clusterCount.  But
+	// this is set to the actual clusterCount if params requests more 
+	// than the number of unique seeds that can be generated.
 	private int clusterCount;
+	// Just duplicates an item in params.
 	private double fuzziness;
+	// Derived from fuzziness to reduce calculations.
 	private double fuzzyPower;
 
 	/**
