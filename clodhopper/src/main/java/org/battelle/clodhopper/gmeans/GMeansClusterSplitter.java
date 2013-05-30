@@ -17,6 +17,13 @@ import org.battelle.clodhopper.tuple.FilteredTupleList;
 import org.battelle.clodhopper.tuple.TupleList;
 import org.battelle.clodhopper.tuple.TupleMath;
 
+/**
+ * The cluster splitter variant used by g-means clustering.
+ * 
+ * @author R. Scarberry
+ * @since 1.0
+ *
+ */
 public class GMeansClusterSplitter extends AbstractClusterSplitter {
 
 	private static final Logger logger = Logger.getLogger(GMeansClusterSplitter.class);
@@ -24,6 +31,14 @@ public class GMeansClusterSplitter extends AbstractClusterSplitter {
 	private TupleList tuples;
 	private GMeansParams params;
 	
+	/**
+	 * Constructor
+	 * 
+	 * @param tuples container for the data being clustered.
+	 * @param params the g-means clustering parameters.
+	 * 
+	 * @throws NullPointerException if either of the parameters is null.
+	 */
 	public GMeansClusterSplitter(TupleList tuples, GMeansParams params) {
 		if (tuples == null || params == null) {
 			throw new NullPointerException();
@@ -33,12 +48,22 @@ public class GMeansClusterSplitter extends AbstractClusterSplitter {
 	}
 	
 	@Override
+	/**
+	 * Uses and Anderson-Darling gaussian test to determine whether or not to prefer the
+	 * split over the original cluster.
+	 * 
+	 * @param origCluster the cluster that was split.
+	 * @param splitClusters the clusters resulting from the split.
+	 */
 	public boolean prefersSplit(Cluster origCluster, List<Cluster> splitClusters) {
 		return !TupleMath.andersonDarlingGaussianTest(projectToLineBetweenChildren(
 				origCluster, splitClusters));
 	}
 
 	@Override
+	/**
+	 * {@inheritDoc}
+	 */
 	public List<Cluster> performSplit(Cluster cluster) {
 		TupleList seeds = createTwoSeeds(cluster);
 		return runLocalKMeans(cluster, seeds);
@@ -111,6 +136,13 @@ public class GMeansClusterSplitter extends AbstractClusterSplitter {
         return seeds;
     }
 
+    /**
+     * Runs k-means to split a cluster.
+     * 
+     * @param cluster
+     * @param seeds
+     * @return
+     */
     protected List<Cluster> runLocalKMeans(Cluster cluster, TupleList seeds) {
 
         FilteredTupleList fcs = new FilteredTupleList(cluster.getMembers().toArray(), tuples);

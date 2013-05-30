@@ -5,13 +5,24 @@ import org.battelle.clodhopper.kmeans.KMeansSplittingParams;
 import org.battelle.clodhopper.seeding.ClusterSeeder;
 
 /**
- * Parameter class for G-Means clustering.
+ * Parameter class for G-Means clustering. This class does not add
+ * any parameters to its parent class KMeansSplittingParams.  It exists
+ * to provide its own nested builder class.
  * 
  * @author R. Scarberry
+ * @since 1.0
  *
  */
 public class GMeansParams extends KMeansSplittingParams {
 
+	/**
+	 * Builder class for GMeansParams.  Since all methods return
+	 * a reference to the builder, calls can be chained for convenience.
+	 * 
+	 * @author R. Scarberry
+	 * @since 1.0
+	 *
+	 */
 	public static class Builder {
 		
 		private GMeansParams params = new GMeansParams();
