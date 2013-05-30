@@ -26,7 +26,6 @@ public class FuzzyCMeansParams {
 	private DistanceMetric distanceMetric;
 	private ClusterSeeder clusterSeeder;
 	private int workerThreadCount = Runtime.getRuntime().availableProcessors();
-	private long randomSeed = System.currentTimeMillis();
 	
 	public FuzzyCMeansParams() {
 		distanceMetric = new EuclideanDistanceMetric();
@@ -56,10 +55,21 @@ public class FuzzyCMeansParams {
 		this.clusterCount = n;
 	}
 	
+	/**
+	 * Get the maximum number of iterations before clustering will terminate
+	 * regardless of whether or not the error level is less than the epsilon value.
+	 * 
+	 * @return
+	 */
 	public int getMaxIterations() {
 		return maxIterations;
 	}
 	
+	/**
+	 * Set the maximum number of iterations.
+	 * 
+	 * @param n
+	 */
 	public void setMaxIterations(int n) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("max iterations must be greater than 0");
@@ -67,10 +77,23 @@ public class FuzzyCMeansParams {
 		this.maxIterations = n;
 	}
 	
+	/**
+	 * Get the fuzziness level, a value of at least 1, which is used in computing
+	 * interim cluster centers and the error level.
+	 * 
+	 * @return
+	 */
 	public double getFuzziness() {
 		return fuzziness;
 	}
 	
+	/**
+	 * Set the fuzziness level.
+	 * 
+	 * @param fuzziness
+	 * 
+	 * @throws IllegalArgumentException if less than 1.0
+	 */
 	public void setFuzziness(double fuzziness) {
 		if (fuzziness < 1.0) {
 			throw new IllegalArgumentException("fuzziness < 1.0: " + fuzziness);
@@ -78,10 +101,23 @@ public class FuzzyCMeansParams {
 		this.fuzziness = fuzziness;
 	}
 	
+	/**
+	 * Get the epsilon value.
+	 * When the computed error level is less than this value, clustering terminates.
+	 * 
+	 * @return
+	 */
     public final double getEpsilon() {
     	return epsilon;
     }
     
+    /**
+     * Set the epsilon value.
+     *
+     * @param epsilon
+     * 
+     * @throws IllegalArgumentException if less than 0
+     */
     public final void setEpsilon(double epsilon) {
     	if (epsilon < 0.0) {
     		throw new IllegalArgumentException("epsilon < 0.0: " + epsilon);
@@ -89,10 +125,22 @@ public class FuzzyCMeansParams {
     	this.epsilon = epsilon;
     }
 		
+    /**
+     * Get the number of worker threads to be used for concurrent subtasks.
+     * 
+     * @return
+     */
 	public int getWorkerThreadCount() {
 		return workerThreadCount;
 	}
 	
+	/**
+	 * Set the number of worker threads to be used for concurrent subtasks.
+	 * 
+	 * @param n
+	 * 
+	 * @throws IllegalArgumentException if less than 1
+	 */
 	public void setWorkerThreadCount(int n) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("worker thread count must be greater than 0");
@@ -100,10 +148,22 @@ public class FuzzyCMeansParams {
 		this.workerThreadCount = n;
 	}
 
+	/**
+	 * Get the distance metric to be used during clustering.
+	 * 
+	 * @return
+	 */
 	public DistanceMetric getDistanceMetric() {
 		return distanceMetric;
 	}
 	
+	/**
+	 * Set the distance metric to be used during clustering.
+	 * 
+	 * @param distanceMetric
+	 * 
+	 * @throws NullPointerException if null
+	 */
 	public void setDistanceMetric(DistanceMetric distanceMetric) {
 		if (distanceMetric == null) {
 			throw new NullPointerException();
@@ -111,10 +171,22 @@ public class FuzzyCMeansParams {
 		this.distanceMetric = distanceMetric;
 	}
 	
+	/**
+	 * Get the object used to pick the initial cluster seeds.
+	 * 
+	 * @return
+	 */
 	public ClusterSeeder getClusterSeeder() {
 		return clusterSeeder;
 	}
 	
+	/**
+	 * Set the object used to pick the initial cluster seeds.
+	 * 
+	 * @param seeder
+	 * 
+	 * @throws NullPointerException if null
+	 */
 	public void setClusterSeeder(ClusterSeeder seeder) {
 		if (seeder == null) {
 			throw new NullPointerException();
@@ -122,14 +194,14 @@ public class FuzzyCMeansParams {
 		this.clusterSeeder = seeder;
 	}
 	
-	public long getRandomSeed() {
-		return randomSeed;
-	}
-	
-	public void setRandomSeed(long randomSeed) {
-		this.randomSeed = randomSeed;
-	}
-
+	/**
+	 * A builder class used for convenience in creating a FuzzyCMeansParams object.
+	 * Each method returns a reference to the builder, so calls can be chained.
+	 *  
+	 * @author R. Scarberry
+	 * @since 1.0
+	 *
+	 */
     public static class Builder {
     	
     	private FuzzyCMeansParams params;
@@ -165,11 +237,6 @@ public class FuzzyCMeansParams {
     	
     	public Builder clusterSeeder(ClusterSeeder seeder) {
     		params.setClusterSeeder(seeder);
-    		return this;
-    	}
-    	
-    	public Builder randomSeed(long seed) {
-    		params.setRandomSeed(seed);
     		return this;
     	}
     	
