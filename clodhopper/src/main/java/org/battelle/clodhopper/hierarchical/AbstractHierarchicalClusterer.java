@@ -20,18 +20,19 @@ package org.battelle.clodhopper.hierarchical;
 
 import java.util.List;
 
-import org.battelle.clodhopper.*;
-import org.battelle.clodhopper.task.*;
+import org.battelle.clodhopper.AbstractClusterer;
+import org.battelle.clodhopper.Cluster;
 import org.battelle.clodhopper.tuple.TupleList;
 
 /**
  * <p>Abstract base class for implementations of hierarchical clustering.
- * Subclasses must implement the <tt>buildDendrogram</tt> method.  The <tt>doTask()</tt>
- * method is final; therefore, subclasses cannot implement <tt>doTask()</tt>.  The
+ * Subclasses must implement the <tt>buildDendrogram</tt> method.  Subclasses cannot
+ * implement the <tt>doTask()</tt> method since it is final.  The
  * difference between different hierarchical clustering algorithms is their methods
  * for generating the dendrogram.</p>
  * 
  * @author R. Scarberry
+ * @since 1.0 
  *
  */
 public abstract class AbstractHierarchicalClusterer extends AbstractClusterer {
@@ -146,7 +147,8 @@ public abstract class AbstractHierarchicalClusterer extends AbstractClusterer {
 
     /**
      * Build a new dendrogram.  Subclasses must implement this method.
-     * @throws Exception
+     * @throws Exception if anything goes wrong.  The exception bubbles up
+     *   to the run method of <tt>AbstractTask</tt> and sets the error message.
      */
     protected abstract void buildDendrogram() throws Exception;
 }
