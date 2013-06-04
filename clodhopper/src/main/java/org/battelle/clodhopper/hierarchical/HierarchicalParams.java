@@ -18,7 +18,26 @@ public class HierarchicalParams {
      *
      */
     public enum Linkage {
-        COMPLETE, SINGLE, MEAN
+    	/**
+    	 * When using complete linkage, the distance between nodes
+    	 * of the dendrogram is the maximum pairwise distance of any 
+    	 * two pairs of tuples i and j, where i is a member of one
+    	 * node and j is the member of another.
+    	 */
+        COMPLETE,
+        /**
+    	 * When using single linkage, the distance between nodes
+    	 * of the dendrogram is the maximum pairwise distance of any 
+    	 * two pairs of tuples i and j, where i is a member of one
+    	 * node and j is the member of another.
+         */
+        SINGLE, 
+        /**
+         * When using mean distance, the distance between node of the dendrogram
+         * is found by averaging the tuples for ids in each node and then computing the
+         * distance between them.
+         */
+        MEAN
     };
 
     /**
@@ -52,6 +71,15 @@ public class HierarchicalParams {
     // Random generator seed for variants of hierarchical that use it.
     private long randomSeed = System.currentTimeMillis();
 
+    /**
+     * Constructor
+     * 
+     * @param clusterCount desired number of clusters
+     * @param linkage the linkage to be used; COMPLETE, SINGLE, or MEAN
+     * @param criterion the criterion to be used; Criterion.CLUSTERS or Criterion.COHERANCE
+     * @param distanceMetric the metric to be used for computing distances
+     * @param workerThreadCount number of threads to be used for concurrent parts of the algorithm
+     */
     public HierarchicalParams(int clusterCount, Linkage linkage, Criterion criterion,
     		DistanceMetric distanceMetric, int workerThreadCount) {
     	setClusterCount(clusterCount);
@@ -61,12 +89,32 @@ public class HierarchicalParams {
     	setWorkerThreadCount(workerThreadCount);
     }
 
+    /**
+     * Constructor
+     */
     public HierarchicalParams() {}
 
+    /**
+     * Translates strings such as &quot;COMPLETE&quot;, &quot;SINGLE&quot; and
+     * &quot;MEAN&quot; into the appropriate linkage type (case-insensitive).
+     * 
+     * @param linkageName
+     * 
+     * @return a Linkage enum
+     * 
+     * @throws IllegalArgumentException if the string cannot be translated.
+     */
     public static Linkage linkageFor(String linkageName) {
     	return Linkage.valueOf(linkageName.toUpperCase());
     }
     
+    /**
+     * Translates a string into the appropriate Criterion enum.
+     * 
+     * @param criterionName
+     * 
+     * @return
+     */
     public static Criterion criterionFor(String criterionName) {
     	return Criterion.valueOf(criterionName.toUpperCase());
     }

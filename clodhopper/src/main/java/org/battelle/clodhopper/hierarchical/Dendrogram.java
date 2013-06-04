@@ -42,7 +42,8 @@ import org.battelle.clodhopper.util.ArrayIntIterator;
  * exceptions from trying to traverse large and highly imbalanced dendrograms.
  * </p>
  * 
- * @author d3j923
+ * @author R.Scarberry
+ * @since 1.0
  *
  */
 public class Dendrogram implements Externalizable {
