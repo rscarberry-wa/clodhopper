@@ -53,7 +53,8 @@ import org.battelle.clodhopper.tuple.TupleList;
  * Average clustering.
  * </p>
  * 
- * @author d3j923
+ * @author R.Scarberry
+ * @since 1.0
  * 
  */
 public class ReverseNNHierarchicalClusterer extends

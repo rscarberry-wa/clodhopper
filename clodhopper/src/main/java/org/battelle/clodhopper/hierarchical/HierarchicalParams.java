@@ -4,6 +4,7 @@ import org.battelle.clodhopper.distance.DistanceMetric;
 import org.battelle.clodhopper.distance.EuclideanDistanceMetric;
 
 public class HierarchicalParams {
+	
     /**
      * Kinds of linkage types, which determine how distances from one
      * hierarchical node to another are calculated.
@@ -119,10 +120,22 @@ public class HierarchicalParams {
     	return Criterion.valueOf(criterionName.toUpperCase());
     }
     
+    /**
+     * Get the requested cluster count.
+     * 
+     * @return
+     */
     public int getClusterCount() {
     	return clusterCount;
     }
     
+    /**
+     * Set the requested cluster count.
+     * 
+     * @param n
+     * 
+     * @throws IllegalArgumentException if n is not a positive integer.
+     */
 	public void setClusterCount(int n) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("cluster count must be greater than 0");
@@ -130,10 +143,24 @@ public class HierarchicalParams {
 		this.clusterCount = n;
 	}
 	
+	/**
+	 * Get the desired cluster coherence.  This parameter only matters when the
+	 * criterion is Criterion.COHERENCE.
+	 * 
+	 * @return
+	 */
 	public double getCoherenceDesired() {
 		return coherenceDesired;
 	}
 	
+	/**
+	 * Set the desired cluster coherence, which is only relevant if using coherence as
+	 * the clustering criterion.
+	 * 
+	 * @param coherenceDesired
+	 * 
+	 * @throws IllegalArgumentException if the value is outside the range (0 - 1].
+	 */
 	public void setCoherenceDesired(double coherenceDesired) {
 		if (coherenceDesired <= 0.0 || coherenceDesired > 1.0) {
 			throw new IllegalArgumentException("coherence not in (0 - 1]: " + coherenceDesired);
@@ -141,26 +168,59 @@ public class HierarchicalParams {
 		this.coherenceDesired = coherenceDesired;
 	}
     
+	/**
+	 * Return the minimum distance threshold used in computing coherences. If not set, this
+	 * defaults to 0.
+	 * 
+	 * @return
+	 */
     public double getMinCoherenceThreshold() {
     	return minCoherenceThreshold;
     }
 
+    /**
+     * Set the minimum distance threshold used in computing coherances.
+     * 
+     * @param minCoherenceThreshold
+     */
     public void setMinCoherenceThreshold(double minCoherenceThreshold) {
     	this.minCoherenceThreshold = minCoherenceThreshold;
     }
 
+    /**
+     * Get the maximum distance threshold used for computing coherences.
+     * 
+     * @return
+     */
     public double getMaxCoherenceThreshold() {
     	return maxCoherenceThreshold;
     }
 
+    /**
+     * Set the maximum distance threshold used in computing coherences.
+     * 
+     * @param maxCoherenceThreshold
+     */
     public void setMaxCoherenceThreshold(double maxCoherenceThreshold) {
     	this.maxCoherenceThreshold = maxCoherenceThreshold;
     }
 
+    /**
+     * Get the criterion used for selecting the clusters
+     * from a completed dendrogram.
+     * 
+     * @return
+     */
     public final Criterion getCriterion() {
         return criterion;
     }
     
+    /**
+     * Set the criterion used for selecting the clusters from a completed
+     * dendrogram.
+     * 
+     * @param criterion
+     */
     public void setCriterion(Criterion criterion) {
     	if (criterion == null) {
     		throw new NullPointerException();
@@ -168,10 +228,23 @@ public class HierarchicalParams {
     	this.criterion = criterion;
     }
     
+    /**
+     * Get the distance metric used for computing distances during clustering.
+     * 
+     * @return
+     */
     public DistanceMetric getDistanceMetric() {
         return distanceMetric;
     }
     
+    /**
+     * Set the distance metric used for computing distances during clustering.
+     * 
+     * @param distanceMetric
+     * 
+     * @throws NullPointerException if the object is null.
+     * 
+     */
     public void setDistanceMetric(DistanceMetric distanceMetric) {
     	if (distanceMetric == null) {
     		throw new NullPointerException();
@@ -179,10 +252,21 @@ public class HierarchicalParams {
     	this.distanceMetric = distanceMetric;
     }
 
+    /**
+     * Get the kind of linkage used for selecting which pairwise distance of use
+     * in determining the distance between dendrogram nodes.
+     * 
+     * @return
+     */
     public final Linkage getLinkage() {
         return linkage;
     }
     
+    /**
+     * Set the kind of linkage used.
+     * 
+     * @param linkage
+     */
     public void setLinkage(Linkage linkage) {
     	if (linkage == null) {
     		throw new NullPointerException();
@@ -190,25 +274,49 @@ public class HierarchicalParams {
     	this.linkage = linkage;
     }
 
+    /**
+     * Get the number of threads to be used for concurrent computing tasks.
+     * 
+     * @return
+     */
 	public int getWorkerThreadCount() {
 		return workerThreadCount;
 	}
 	
+	/**
+	 * Set the number of threads to be used for concurrent computing tasks.
+	 * 
+	 * @param n
+	 */
 	public void setWorkerThreadCount(int n) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("worker thread count must be greater than 0");
 		}
 		this.workerThreadCount = n;
 	}
-	
+
+	/**
+	 * Get the seed for random number generation.
+	 * 
+	 * @return
+	 */
 	public long getRandomSeed() {
 		return randomSeed;
 	}
 	
+	/**
+	 * Set the seed for random number generation.
+	 * 
+	 * @param randomSeed
+	 */
 	public void setRandomSeed(long randomSeed) {
 		this.randomSeed = randomSeed;
 	}
 
+	@Override
+	/**
+	 * {@inheritDoc}
+	 */
 	public int hashCode() {
         int hc = distanceMetric.hashCode();
         hc = 37 * hc + linkage.hashCode();
@@ -224,6 +332,10 @@ public class HierarchicalParams {
         return hc;
     }
 
+	@Override
+	/**
+	 * {@inheritDoc}
+	 */
     public boolean equals(Object o) {
         if (o == this) {
             return true;
@@ -251,7 +363,8 @@ public class HierarchicalParams {
      * Builder class for convenience, so you don't have to remember the numerous constructor
      * parameters.
      * 
-     * @author d3j923
+     * @author R.Scarberry
+     * @since 1.0
      *
      */
     public static class Builder {
