@@ -11,16 +11,16 @@ import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -70,7 +70,12 @@ import org.battelle.clodhopper.tuple.TupleListFactoryException;
 
 public class ClodHopperUI extends JFrame {
 	
-	// Holds a MemoryMXBean for getting the current memory settings.
+	/**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
+
+  // Holds a MemoryMXBean for getting the current memory settings.
 	// Use the initialization-on-demand holder idiom.  instance isn't set until the holder is accessed.
 	private static class MXBeanHolder {
 		private static final MemoryMXBean instance = ManagementFactory.getMemoryMXBean();
@@ -144,6 +149,13 @@ public class ClodHopperUI extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				runOrCancel();
 			}
+		});
+		
+		saveResultsButton.addActionListener(new ActionListener() {
+		  @Override
+		  public void actionPerformed(ActionEvent e) {
+		    saveClusterList();
+		  }
 		});
 		
 		Container contentPane = this.getContentPane();
@@ -433,6 +445,66 @@ public class ClodHopperUI extends JFrame {
 			}
 		}
 	}
+	
+	/**
+	 * Saves the clusters to a csv file, one cluster per line, with just the indexes of
+	 * the tuples assigned to the cluster.  The center of the cluster is not saved to the 
+	 * file, only the membership.
+	 */
+	private void saveClusterList() {
+	  
+	  if (clusters != null) {
+	    
+	    if (fileChooser == null) {
+	      fileChooser = new JFileChooser();
+	      fileChooser.setCurrentDirectory(new File("."));
+	    }
+	    
+	    fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+	    fileChooser.setSelectedFile(null);
+	    
+	    if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+	      File f = fileChooser.getSelectedFile();
+	      if (f != null) {
+	        if (f.exists()) {
+	          int opt = JOptionPane.showConfirmDialog(this, "File " + f.getName() + " exists.  Overwrite this file?");
+	          if (opt != JOptionPane.YES_OPTION && opt != JOptionPane.OK_OPTION) {
+	            return;
+	          }
+	        }
+	        // Just embed the output code here for now. Probably will
+	        // move this to a utility class for cluster i/o later after
+	        // getting feedback on the format, etc.
+	        PrintWriter pw = null;
+	        try {
+	          pw = new PrintWriter(new BufferedWriter(new FileWriter(f)));
+	          for (Cluster c : clusters) {
+	            pw.println(csvStringForCluster(c));
+	          }
+	        } catch (IOException ioe) {
+	          JOptionPane.showMessageDialog(this, "Error saving clusters: " + ioe.getMessage(), 
+	              "Error Saving Clusters", JOptionPane.ERROR_MESSAGE);
+	        } finally {
+	          if (pw != null) {
+	            pw.close();
+	          }
+	        } 
+	      }
+	    }
+	  }
+	}
+
+  private static String csvStringForCluster(Cluster c) {
+    StringBuilder sb = new StringBuilder();
+    final int memberCount = c.getMemberCount();
+    for (int i=0; i<memberCount; i++) {
+      if (i > 0) {
+        sb.append(',');
+      }
+      sb.append(c.getMember(i));
+    }
+    return sb.toString();
+  }
 	
 	private void launchFirstTask(Task<?> task) {
 		// Null these, since they will be regenerated.
