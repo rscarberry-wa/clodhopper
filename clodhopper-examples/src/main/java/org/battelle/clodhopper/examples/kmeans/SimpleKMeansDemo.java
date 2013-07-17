@@ -16,12 +16,22 @@ import org.battelle.clodhopper.tuple.TupleIO;
 import org.battelle.clodhopper.tuple.TupleList;
 import org.battelle.clodhopper.tuple.TupleListFactory;
 
+/**
+ * A very simple demonstration of how to run k-means clustering on 
+ * data contained in a csv file.  The csv file is specified as the first 
+ * argument to main.  The clustering results are output to stdout.
+ * 
+ * @author Randy Scarberry
+ *
+ */
 public class SimpleKMeansDemo {
 
   public static void main(String[] args) {
 
     // This example expects you to provide the name of a csv file containing the data
-    // you wish to cluster.
+    // you wish to cluster.  Each line of the csv file should contain a row of numbers. 
+	// Each row should contain the same count of numbers.
+	//
     if (args.length != 1) {
       System.err.printf("Usage: java %s <input csv file>\n", SimpleKMeansDemo.class.getName());
       System.exit(-1);
@@ -38,8 +48,11 @@ public class SimpleKMeansDemo {
       // First, create a TupleListFactory.  For this example, just use 
       // a simple ArrayTupleListFactory.  This factory produces ArrayTupleLists, which
       // use a 1-D array of doubles to house the data.
+      //
       TupleListFactory tupleListFactory = new ArrayTupleListFactory();
+      
       // Call TupleIO to read it.  It doesn't matter what name is given to the TupleList.
+      //
       TupleList tuples = TupleIO.loadCSV(new File(args[0]), "myData", tupleListFactory);
       
       // 
@@ -48,6 +61,7 @@ public class SimpleKMeansDemo {
       
       // For this example, arbitrarily choose the square root of the number 
       // of tuples as the number of clusters.  
+      //
       int numClusters = (int) Math.sqrt(tuples.getTupleCount());
 
       // Since k-means has many parameters, it's easiest to use the nested builder class.
@@ -61,9 +75,17 @@ public class SimpleKMeansDemo {
         .workerThreadCount(Runtime.getRuntime().availableProcessors())
         .build();
       
+      // Notice that k-means++ seeding was used, so you may think of this
+      // as k-means++ instead of k-means.  The only difference is how the initial seeds
+      // are chosen.
+      
+      // Now instantiate k-means.
       KMeansClusterer kMeans = new KMeansClusterer(tuples, params);
       
       // Register a TaskListener that will output messages to System.out.
+      // In graphical applications, you would use the task events to 
+      // display progress and status messages, and to know when k-means was
+      // done.
       //
       kMeans.addTaskListener(new TaskListener() {
 
@@ -103,7 +125,8 @@ public class SimpleKMeansDemo {
         }        
       });
       
-      // Lauch k-means on a new thread.  (We could be REALLY simple and call k-means.run()...)
+      // Launch k-means on a new thread.  (We could be REALLY simple and call k-means.run()...)
+      //
       Thread t = new Thread(kMeans);
       t.start();
       
@@ -142,8 +165,21 @@ public class SimpleKMeansDemo {
         
         System.out.printf("K-Means ended with the following error: %s\n", kMeans.getErrorMessage());
         
+      } else {
+    	  
+    	  // The only other TaskOutcome is TaskOutcome.CANCELLED, but this 
+    	  // program does not provide a way to cancel.  Therefore, if we're here,
+    	  // there must be a bug.
+    	  
+    	  System.out.printf("K-Means ended with the unexpected outcome of: %s\n", kMeans.getTaskOutcome());
+    	  
       }
     
+      // The most likely scenario is someone running this on such a huge file
+      // of data, an OutOfMemoryError results.  No fear, though. ClodHopper can
+      // handle really large amounts of data by using an FSTupleListFactory instead
+      // of an ArrayTupleListFactory.
+      //
     } catch (Throwable t) {
       
       t.printStackTrace();
