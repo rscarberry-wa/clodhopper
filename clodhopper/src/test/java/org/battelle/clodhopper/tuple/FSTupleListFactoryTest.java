@@ -41,12 +41,17 @@ public class FSTupleListFactoryTest {
     
     @Before
     public void createTempDir() {
+        String tmpDirPath = System.getProperty("java.io.tmpdir");
+        if (tmpDirPath == null) {
+        	tmpDirPath = ".";
+        }
+        File tmpDir = new File(tmpDirPath);
         String dirName = "tempDir_";
         int n = 0;
         File d = null;
         boolean ok = false;
         while(true) {
-            d = new File(dirName + n);
+            d = new File(tmpDir, dirName + n);
             if (!d.exists() && d.mkdir()) {
                 ok = true;
                 break;
@@ -64,6 +69,9 @@ public class FSTupleListFactoryTest {
     public void deleteTempDir() {
         if (dir != null && dir.isDirectory()) {
             try {
+            	// Much more likely to be able to delete temporary files
+            	// after explicit garbage collection.
+            	System.gc();
                 delete(dir);
             } catch (IOException ioe) {
                 System.err.println(ioe.getMessage());
