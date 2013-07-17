@@ -37,6 +37,12 @@ import org.apache.log4j.Logger;
  *
  *===================================================================*/
 
+/**
+ * Contains static methods for I/O of tuple data.
+ * 
+ * @author R.Scarberry
+ *
+ */
 public class TupleIO {
 
 	private static final Logger logger = Logger.getLogger(TupleIO.class);
@@ -68,10 +74,33 @@ public class TupleIO {
 		}
 	}
 		
+	/**
+	 * Loads numeric data contained in a csv file into a TupleList
+	 * 
+	 * @param file the file containing the data.
+	 * @param charSet the character set of the file. If null, the default character set is used.
+	 * @param delimiter the delimiter, which is a comma by definition for csv files.  However, you can read
+	 *                  tab-delimited files too, but passing in a tab.
+	 * @param startColumn the starting column in case some columns at the beginning of each row should be ignored.
+	 *                    For example, some csv files may have a row number or id in the 0th column.
+	 * @param columnCount the number of columns.
+	 * @param nameForTuples the name to assign to the TupleList within its factory.
+	 * @param factory the TupleListFactory, which will manage the TupleList.
+	 * @param cancelable if non-null, this will be checked periodically to see if loading the data should be
+	 *                   cancelled.  If null, it is ignored.
+	 *                   
+	 * @return a TupleList containing the data.
+	 * 
+	 * @throws IOException if some kind if IO error occurs.
+	 * 
+	 * @throws CancellationException if loading is cancelled.
+	 */
 	public static TupleList loadCSV(
-			File file, String charSet, 
+			File file, 
+			String charSet, 
 			String delimiter, 
-			int startColumn, int columnCount,
+			int startColumn, 
+			int columnCount,
 			String nameForTuples,
 			TupleListFactory factory,
 			Cancelable cancelable) throws IOException, CancellationException {
@@ -80,20 +109,34 @@ public class TupleIO {
 			charSet = Charset.defaultCharset().name();
 		}
 
+		// Parse out information on the data in the file such as the number of rows and
+		// the columns containing numeric data.
 		CSVInfo csvInfo = parseCSVInfo(file, charSet, startColumn, delimiter, cancelable);	
 		
+		// When a bit is set, each row has numeric data for that column.
 		BitSet colBits = csvInfo.getColumnBits();
 
+		// The first row that has numeric data.  The startRow might not be 0 if the
+		// first row contains headings.
 		final int startRow = csvInfo.getStartRow();
+		
 		final int rows = csvInfo.getRowCount();
+		
+		// The number of columns is the number of set bits.
 		// Don't have to worry about startColumn.  Bits for columns < startColumn won't be set.
 		final int cols = colBits.cardinality();
 
+		// Have to have some data.
 		if (rows == 0 || cols == 0) {
 			throw new IOException(String.format("no data found: rows = %d, columns = %d", rows, cols));
 		}
 
+		// Have the factory create an empty TupleList to hold the data.
+		// In order for the factory to know what kind of TupleList to create, it
+		// has to know the number of rows and columns.
 		TupleList tuples = factory.createNewTupleList(nameForTuples, cols, rows);
+		
+		// Temporary buffer
 		double[] buffer = new double[cols];
 
 		BufferedReader br = null;
@@ -156,6 +199,7 @@ public class TupleIO {
 
 		} finally {
 
+			// Be sure that the file is closed properly.
 			if (br != null) {
 				try {
 					br.close();
@@ -164,6 +208,8 @@ public class TupleIO {
 				}
 			}
 
+			// If it did not succeed, clean up the TupleList if it was
+			// created.
 			if (!ok) {
 				if (tuples != null) {
 					try {
@@ -179,171 +225,19 @@ public class TupleIO {
 		return tuples;
 	}
 	
-//	public static TupleList loadCSV(
-//				File file, String charSet, 
-//				String delimiter, 
-//				int startColumn, int columnCount,
-//				String nameForTuples,
-//				TupleListFactory factory,
-//				Cancelable cancelable) throws IOException, CancellationException {
-//	
-//		if (charSet == null) {
-//			charSet = Charset.defaultCharset().name();
-//		}
-//
-//		int[] fileInfo = countRowsAndColumns(file, charSet, startColumn, delimiter, cancelable);
-//		
-//		final int rows = fileInfo[0];
-//		final int cols = fileInfo[1];
-//		final int startRow = fileInfo[2];
-//		
-//		if (columnCount > 0) {
-//			if (cols < startColumn + columnCount) {
-//				throw new IOException("too few columns in file: " + cols);
-//			}
-//		}
-//		if (rows == 0 || cols == 0) {
-//			throw new IOException(String.format("no data found: rows = %d, columns = %d", rows, cols));
-//		}
-//
-//		final int tupleLength = columnCount > 0 ? columnCount : (cols - startColumn);
-//		
-//		TupleList tuples = factory.createNewTupleList(nameForTuples, tupleLength, rows);
-//		double[] buffer = new double[tupleLength];
-//		
-//		BufferedReader br = null;
-//		boolean ok = false;
-//		
-//		try {
-//						
-//			br = new BufferedReader(new InputStreamReader(new FileInputStream(file), charSet));
-//			String line;
-//			int lineNum = 0;
-//			int row = 0;
-//			
-//			while((line = br.readLine()) != null) {
-//				if (cancelable != null && cancelable.isCanceled()) {
-//					throw new CancellationException();
-//				}
-//				if (lineNum >= startRow) {
-//					try {
-//						StringTokenizer tokenizer = new StringTokenizer(line, delimiter);
-//						for (int i=0; i<startColumn; i++) {
-//							tokenizer.nextToken();
-//						}
-//						for (int i=0; i<tupleLength; i++) {
-//							buffer[i] = Double.parseDouble(tokenizer.nextToken());
-//						}
-//						tuples.setTuple(row, buffer);
-//					} catch (NoSuchElementException nsee) {
-//						throw new IOException("too few columns on row " + row);
-//					} catch (NumberFormatException nfe) {
-//						throw new IOException("unparseable element on row " + row + ": " + line);
-//					}
-//					row++;
-//				}
-//				lineNum++;
-//			}
-//			
-//			ok = row == rows;
-//			
-//		} finally {
-//		
-//			if (br != null) {
-//				try {
-//					br.close();
-//				} catch (IOException ioe) {
-//					logger.error(ioe);
-//				}
-//			}
-//			
-//			if (!ok) {
-//				if (tuples != null) {
-//					try {
-//						factory.closeTupleList(tuples);
-//						factory.deleteTupleList(tuples);
-//					} catch (TupleListFactoryException tlfe) {
-//						logger.error(tlfe);
-//					}
-//				}
-//			}
-//		}
-//		
-//		return tuples;
-//	}
-	
-	private static int[] countRowsAndColumns(File file, String charSet, 
-			int startColumn, String delimiter, Cancelable cancelable) 
-					throws IOException, CancellationException {
-		
-		int rows = 0;
-		int cols = 0;
-		int startRow = 0;
-		
-		BufferedReader br = null;
-		try {
-			
-			if (charSet == null) {
-				charSet = Charset.defaultCharset().name();
-			}
-			
-			br = new BufferedReader(new InputStreamReader(new FileInputStream(file), charSet));
-			String line;
-			int lineNum = 0;
-		
-			while((line = br.readLine()) != null) {
-				
-				if (cancelable != null && cancelable.isCanceled()) {
-					throw new CancellationException();
-				}
-				
-				if (rows == 0) {
-					StringTokenizer tokenizer = new StringTokenizer(line, delimiter);
-					int tokenCount = tokenizer.countTokens();
-					if (tokenCount > startColumn) {
-						// In files with a header row, this will cause the header row to be omitted.
-						boolean allOk = true;
-						try {
-							for (int i=0; i<startColumn; i++) {
-								tokenizer.nextToken();
-							}
-						} catch (NoSuchElementException nsee) {
-							allOk = false;
-						}
-						for (int i=startColumn; i<tokenCount && allOk; i++) {
-							try {
-								Double.parseDouble(tokenizer.nextToken());
-							} catch (NumberFormatException nfe) {
-								allOk = false;
-							}
-						}
-						if (allOk) {
-							startRow = lineNum;
-							rows = 1;
-							cols = tokenCount;
-						}
-					}
-				} else {
-					rows++;
-				}
-				
-				lineNum++;
-			}
-			
-		} finally {
-			
-			if (br != null) {
-				try {
-					br.close();
-				} catch (IOException ioe) {
-				}
-			}
-			
-		}
-		
-		return new int[] { rows, cols, startRow };
-	}
-	
+	/**
+	 * Parse a csv file to determine the number of rows and which columns contain
+	 * numeric data.  
+	 * 
+	 * @param file
+	 * @param charSet
+	 * @param startColumn
+	 * @param delimiter
+	 * @param cancelable
+	 * @return
+	 * @throws IOException
+	 * @throws CancellationException
+	 */
 	private static CSVInfo parseCSVInfo(File file, String charSet, 
 			int startColumn, String delimiter, Cancelable cancelable) 
 					throws IOException, CancellationException {
@@ -439,10 +333,31 @@ public class TupleIO {
 		return new CSVInfo(startRow, lineNum - startRow + 1, columnBits);
 	}
 
+	/**
+	 * Saves data from a TupleList to a csv file using default settings.
+	 * 
+	 * @param file
+	 * @param tuples
+	 * @throws IOException
+	 */
 	public static void saveCSV(File file, TupleList tuples) throws IOException {
 		saveCSV(file, null, ",", null, tuples, null);
 	}
 	
+	/**
+	 * Saves the values from a TupleList to a csv file.
+	 * 
+	 * @param file the file to which to save the data.
+	 * @param charSet the character set name to use. If null, the default character set is used.
+	 * @param delimiter the delimiter to use.
+	 * @param outputPattern a pattern such as &quot;%5.2f&quot; for formatting the numbers as
+	 *                      they are written. If null, default formatting is used.
+	 * @param tuples the TupleList containing the data.
+	 * @param headers headers to write to the first row, if non-null.  If non-null this
+	 *                must be the same length as the tuples.
+	 *                
+	 * @throws IOException
+	 */
 	public static void saveCSV(
 			File file, String charSet, String delimiter, String outputPattern, TupleList tuples, String[] headers) throws IOException {
 		
@@ -489,11 +404,16 @@ public class TupleIO {
 		}
 		
 	}
-	
+
+	// Encapsulates information on the contents of a csv file
+	//
 	static class CSVInfo {
 		
+		// The starting row.
 		private int startRow;
+		// The number of rows.
 		private int rowCount;
+		// Set bits indicate the columns containing numeric data.
 		private BitSet columnBits;
 		
 		CSVInfo(int startRow, int rowCount, BitSet columnBits) {
@@ -514,19 +434,5 @@ public class TupleIO {
 			return columnBits;
 		}
 	}
-	
-	public static void main(String[] args) {
-		
-		try {
-			
-			File f = new File("C:/Users/d3j923/Documents/rguide/battleHistory.csv");
-			TupleList tuples = loadCSV(f, null, ",", 4, 0, "battleHistory", new ArrayTupleListFactory());
-			
-			System.out.printf("tupleLength, tupleCount = (%d, %d)\n", tuples.getTupleLength(), tuples.getTupleCount());
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+
 }
