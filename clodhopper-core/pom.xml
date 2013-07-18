@@ -2,142 +2,26 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-  	<groupId>org.sonatype.oss</groupId>
-  	<artifactId>oss-parent</artifactId>
-  	<version>7</version>
+    <groupId>org.battelle</groupId>
+    <artifactId>clodhopper</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
   
-  <groupId>org.battelle</groupId>
-  <artifactId>clodhopper</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <artifactId>clodhopper-core</artifactId>
   <packaging>jar</packaging>
-
-  <name>clodhopper</name>
-  <description>ClodHopper: A High-Performance Java Library for Data Clustering</description>
-  <url>https://github.com/rscarberry-wa/clodhopper/wiki</url>
-
-  <licenses>
-    <!-- For ClodHopper itself, log4j -->
-    <license>
-      <name>The Apache Software License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-      <distribution>repo</distribution>
-    </license>
-    <!-- For trove4j -->
-    <license>
-      <name>GNU Lesser General Public License 2.1</name>
-      <url>http://www.gnu.org/licenses/lgpl-2.1.txt</url>
-      <distribution>repo</distribution>
-    </license>
-    <!-- For junit -->
-    <license>
-      <name>Common Public License Version 1.0</name>
-      <url>http://www.opensource.org/licenses/cpl1.0.txt</url>
-    </license>
-  </licenses>
-  
-  <scm>
-    <connection>scm:git:git@github.com:rscarberry-wa/clodhopper.git</connection>
-    <developerConnection>scm:git:git@github.com:rscarberry-wa/clodhopper.git</developerConnection>
-    <url>git@github.com:rscarberry-wa/clodhopper.git</url>
-  </scm>
-  
-  <developers>
-  	<developer>
-      <id>rscarberry-wa</id>
-      <name>Randall Scarberry</name>
-      <email>drrandys@yahoo.com</email>
-    </developer>
-  </developers>
-  
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
-
-  <build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>2.7</version>
-				<configuration>
-					<show>private</show>
-					<nohelp>true</nohelp>
-				</configuration>
-               <executions>
-                 <execution>
-                  <id>attach-javadoc</id>
-                  <goals>
-                    <goal>jar</goal>
-                  </goals>
-                  </execution>
-                </executions>
- 			</plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-source-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>attach-sources</id>
-                  <goals>
-                    <goal>jar</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
-            
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-gpg-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>sign-artifacts</id>
-                  <phase>verify</phase>
-                  <goals>
-                    <goal>sign</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
-            
-		</plugins>
-	</build>
-	<reporting>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>2.7</version>
-				<configuration>
-					<show>public</show>
-				</configuration>
-			</plugin>
-		</plugins>
-	</reporting>
   
   <dependencies>
-	<dependency>
-		<groupId>net.sf.trove4j</groupId>
-		<artifactId>trove4j</artifactId>
-		<version>3.0.3</version>
-	</dependency>
-	<dependency>
-		<groupId>log4j</groupId>
-		<artifactId>log4j</artifactId>
-		<version>1.2.17</version>
-	</dependency>
+    <dependency>
+	<groupId>net.sf.trove4j</groupId>
+	<artifactId>trove4j</artifactId>
+    </dependency>
+    <dependency>
+	<groupId>log4j</groupId>
+	<artifactId>log4j</artifactId>
+    </dependency>
     <dependency>
     	<groupId>junit</groupId>
       	<artifactId>junit</artifactId>
-      	<version>4.8.2</version>
       	<scope>test</scope>
     </dependency>
   </dependencies>
