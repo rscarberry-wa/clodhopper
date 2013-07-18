@@ -5,6 +5,7 @@
     <groupId>org.battelle</groupId>
     <artifactId>clodhopper</artifactId>
     <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   
   <artifactId>clodhopper-core</artifactId>
