@@ -37,9 +37,9 @@
   </licenses>
   
   <scm>
-    <connection>scm:git:git://github.com/rscarberry-wa/clodhopper.git</connection>
-    <developerConnection>scm:git:rscarberry-wa@github.com:rscarberry-wa/clodhopper.git</developerConnection>
-    <url>https://github.com/rscarberry-wa/clodhopper</url>
+    <connection>scm:git:git@github.com:rscarberry-wa/clodhopper.git</connection>
+    <developerConnection>scm:git:git@github.com:rscarberry-wa/clodhopper.git</developerConnection>
+    <url>git@github.com:rscarberry-wa/clodhopper.git</url>
   </scm>
   
   <developers>
