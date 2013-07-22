@@ -1,10 +1,12 @@
 package org.battelle.clodhopper.examples.jarvispatrick;
 
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.util.ArrayList;
 
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -29,6 +31,7 @@ public class JarvisPatrickParamsPanel extends JPanel
   private static final long serialVersionUID = 1L;
   private JTextField nearestNeighborsToExamineTF = new JTextField();
   private JTextField nearestNeighborOverlapTF = new JTextField();
+  private JCheckBox mutualNearestNeighborsCB = new JCheckBox("Mutual Nearest Neighbors");
   private JTextField threadCountTF = new JTextField();
   private JComboBox distanceMetricDD = new JComboBox();
 
@@ -47,6 +50,9 @@ public class JarvisPatrickParamsPanel extends JPanel
     nearestNeighborOverlapTF.setColumns(8);
     nearestNeighborOverlapTF.setDocument(new NumberDocument(false, false));
     nearestNeighborOverlapTF.setText(String.valueOf(params.getNearestNeighborOverlap()));
+    
+    mutualNearestNeighborsCB.setSelected(params.getMutualNearestNeighbors());
+    mutualNearestNeighborsCB.setToolTipText("Require that tuples be mutual nearest neighbors in order to be clustered together.");
 
     threadCountTF.setColumns(8);
     threadCountTF.setDocument(new NumberDocument(false, false));
@@ -96,23 +102,30 @@ public class JarvisPatrickParamsPanel extends JPanel
         new GridBagConstraints(1, 1, 1, 1, 1.0, 0.0, 
                 GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, 
                 new Insets(5, 0, 5, 10), 0, 0));
-    this.add(threadCountLbl, 
-        new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0, 
-                GridBagConstraints.EAST, GridBagConstraints.NONE, 
-                new Insets(5, 10, 5, 5), 0, 0));
-    this.add(threadCountTF,
-        new GridBagConstraints(1, 2, 1, 1, 1.0, 0.0, 
+    
+    JPanel mutualNNPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+    mutualNNPanel.add(mutualNearestNeighborsCB);
+    
+    this.add(mutualNNPanel, new GridBagConstraints(0, 2, 2, 1, 1.0, 0.0, 
                 GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, 
                 new Insets(5, 0, 5, 10), 0, 0));
-    this.add(distanceMetricLbl, 
+    this.add(threadCountLbl, 
         new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0, 
                 GridBagConstraints.EAST, GridBagConstraints.NONE, 
                 new Insets(5, 10, 5, 5), 0, 0));
-    this.add(distanceMetricDD, new GridBagConstraints(1, 3, 1, 1, 1.0, 0.0, 
+    this.add(threadCountTF,
+        new GridBagConstraints(1, 3, 1, 1, 1.0, 0.0, 
+                GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, 
+                new Insets(5, 0, 5, 10), 0, 0));
+    this.add(distanceMetricLbl, 
+        new GridBagConstraints(0, 4, 1, 1, 0.0, 0.0, 
+                GridBagConstraints.EAST, GridBagConstraints.NONE, 
+                new Insets(5, 10, 5, 5), 0, 0));
+    this.add(distanceMetricDD, new GridBagConstraints(1, 4, 1, 1, 1.0, 0.0, 
                 GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, 
                 new Insets(5, 0, 5, 10), 0, 0));
     
-    this.add(new JPanel(), new GridBagConstraints(0, 4, 2, 1, 1.0, 1.0, GridBagConstraints.CENTER,
+    this.add(new JPanel(), new GridBagConstraints(0, 5, 2, 1, 1.0, 1.0, GridBagConstraints.CENTER,
         GridBagConstraints.BOTH, new Insets(0,0,0,0), 0, 0));
 
   }
@@ -159,6 +172,7 @@ public class JarvisPatrickParamsPanel extends JPanel
       JarvisPatrickParams.Builder builder = new JarvisPatrickParams.Builder()
         .nearestNeighborsToExamine(nearestNeighborsToExamine)
         .nearestNeighborOverlap(nearestNeighborOverlap)
+        .mutualNearestNeighbors(mutualNearestNeighborsCB.isSelected())
         .workerThreadCount(threadCount)
         .distanceMetric(distanceMetric);
       

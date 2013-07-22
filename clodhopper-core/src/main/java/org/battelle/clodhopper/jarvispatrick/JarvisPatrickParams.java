@@ -46,12 +46,14 @@ public class JarvisPatrickParams {
   
   private int nearestNeighborsToExamine;
   private int nearestNeighborOverlap;
+  private boolean mutualNearestNeighbors;
   private DistanceMetric distanceMetric;
   private int workerThreadCount;
   
   public JarvisPatrickParams() {
     nearestNeighborsToExamine = NEAREST_NEIGHBORS_TO_EXAMINE_DEFAULT;
     nearestNeighborOverlap = NEAREST_NEIGHBOR_OVERLAP_DEFAULT;
+    mutualNearestNeighbors = true;
     distanceMetric = new EuclideanDistanceMetric();
     workerThreadCount = Runtime.getRuntime().availableProcessors();
   }
@@ -76,6 +78,14 @@ public class JarvisPatrickParams {
       throw new IllegalArgumentException("must be >= 1: " + nearestNeighborOverlap);
     }
     this.nearestNeighborOverlap = nearestNeighborOverlap;
+  }
+  
+  public boolean getMutualNearestNeighbors() {
+    return mutualNearestNeighbors;
+  }
+  
+  public void setMutualNearestNeighbors(boolean b) {
+    mutualNearestNeighbors = b;
   }
   
   public DistanceMetric getDistanceMetric() {
@@ -115,6 +125,11 @@ public class JarvisPatrickParams {
     
     public Builder nearestNeighborOverlap(int nearestNeighborOverlap) {
       params.setNearestNeighborOverlap(nearestNeighborOverlap);
+      return this;
+    }
+    
+    public Builder mutualNearestNeighbors(boolean b) {
+      params.setMutualNearestNeighbors(b);
       return this;
     }
     
