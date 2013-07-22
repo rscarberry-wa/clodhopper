@@ -49,6 +49,7 @@ import org.battelle.clodhopper.examples.fuzzycmeans.FuzzyCMeansParamsPanel;
 import org.battelle.clodhopper.examples.gmeans.GMeansParamsPanel;
 import org.battelle.clodhopper.examples.hierarchical.ReverseNNHierarchicalParamsPanel;
 import org.battelle.clodhopper.examples.hierarchical.StandardHierarchicalParamsPanel;
+import org.battelle.clodhopper.examples.jarvispatrick.JarvisPatrickParamsPanel;
 import org.battelle.clodhopper.examples.kmeans.KMeansParamsPanel;
 import org.battelle.clodhopper.examples.project.Projection;
 import org.battelle.clodhopper.examples.project.ProjectionParams;
@@ -87,6 +88,7 @@ public class ClodHopperUI extends JFrame {
 	
 	private static final String KMEANS = "KMeans";
 	private static final String HIERARCHICAL = "Hierarchical";
+	private static final String JARVISPATRICK = "Jarvis-Patrick";
 	private static final String REVERSE_NN = "Reverse Nearest Neighbor";
 	private static final String GMEANS = "GMeans";
 	private static final String XMEANS = "XMeans";
@@ -95,6 +97,7 @@ public class ClodHopperUI extends JFrame {
 	private static final String[] CLUSTERING_METHODS = { 
 		KMEANS,
 		HIERARCHICAL,
+		JARVISPATRICK,
 		REVERSE_NN,
 		GMEANS,
 		XMEANS,
@@ -111,6 +114,7 @@ public class ClodHopperUI extends JFrame {
 	
 	private KMeansParamsPanel kmeansParamsPanel = new KMeansParamsPanel();
 	private StandardHierarchicalParamsPanel hierarchicalParamsPanel = new StandardHierarchicalParamsPanel();
+	private JarvisPatrickParamsPanel jarvisPatrickParamsPanel = new JarvisPatrickParamsPanel();
 	private ReverseNNHierarchicalParamsPanel reverseNNParamsPanel = new ReverseNNHierarchicalParamsPanel();
 	private XMeansParamsPanel xmeansParamsPanel = new XMeansParamsPanel();
 	private GMeansParamsPanel gmeansParamsPanel = new GMeansParamsPanel();
@@ -217,6 +221,9 @@ public class ClodHopperUI extends JFrame {
 		
 		paramsPanel.add(hierarchicalParamsPanel, HIERARCHICAL);
 		paramsPanelMap.put(HIERARCHICAL, hierarchicalParamsPanel);
+		
+		paramsPanel.add(jarvisPatrickParamsPanel, JARVISPATRICK);
+		paramsPanelMap.put(JARVISPATRICK, jarvisPatrickParamsPanel);
 		
 		paramsPanel.add(reverseNNParamsPanel, REVERSE_NN);
 		paramsPanelMap.put(REVERSE_NN, reverseNNParamsPanel);
