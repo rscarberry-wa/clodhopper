@@ -113,10 +113,10 @@ public class ClodHopperUI extends JFrame implements SelectionListener {
 	
 	private JTabbedPane scatterPlotPane = new JTabbedPane();
 	
-    private JTextField fileNameTF = new JTextField();
-    private JButton fileNameBrowseButton = new JButton("Browse...");
+  private JTextField fileNameTF = new JTextField();
+  private JButton fileNameBrowseButton = new JButton("Browse...");
 
-    private JComboBox<String> clusterTypeCB = new JComboBox<String>();
+  private JComboBox clusterTypeCB = new JComboBox();
 	private JPanel paramsPanel = new JPanel(new CardLayout());
 	
 	private KMeansParamsPanel kmeansParamsPanel = new KMeansParamsPanel();
@@ -733,6 +733,7 @@ public class ClodHopperUI extends JFrame implements SelectionListener {
 					
 					scatterPlotPane.add(tabTitle, scatterPlot);
 					scatterPlotPane.setTabComponentAt(tabNumber, new CloseableTab(scatterPlotPane));
+					scatterPlotPane.setSelectedIndex(tabNumber);
 				}
 				
 			} else if (outcome == TaskOutcome.ERROR) {
