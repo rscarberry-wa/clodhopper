@@ -11,6 +11,8 @@ import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ContainerEvent;
+import java.awt.event.ContainerListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.BufferedWriter;
@@ -22,6 +24,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import javax.swing.BorderFactory;
@@ -36,6 +39,7 @@ import javax.swing.JProgressBar;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ProgressMonitor;
@@ -54,6 +58,9 @@ import org.battelle.clodhopper.examples.kmeans.KMeansParamsPanel;
 import org.battelle.clodhopper.examples.project.Projection;
 import org.battelle.clodhopper.examples.project.ProjectionParams;
 import org.battelle.clodhopper.examples.project.Projector;
+import org.battelle.clodhopper.examples.selection.SelectionEvent;
+import org.battelle.clodhopper.examples.selection.SelectionListener;
+import org.battelle.clodhopper.examples.selection.SelectionModel;
 import org.battelle.clodhopper.examples.viz.ScatterPlot2D;
 import org.battelle.clodhopper.examples.xmeans.XMeansParamsPanel;
 import org.battelle.clodhopper.task.AbstractTask;
@@ -69,7 +76,7 @@ import org.battelle.clodhopper.tuple.TupleList;
 import org.battelle.clodhopper.tuple.TupleListFactory;
 import org.battelle.clodhopper.tuple.TupleListFactoryException;
 
-public class ClodHopperUI extends JFrame {
+public class ClodHopperUI extends JFrame implements SelectionListener {
 	
 	/**
    * 
@@ -104,12 +111,12 @@ public class ClodHopperUI extends JFrame {
 		FUZZY_CMEANS
 	};
 	
-	private ScatterPlot2D scatterPlot = new ScatterPlot2D();
+	private JTabbedPane scatterPlotPane = new JTabbedPane();
 	
     private JTextField fileNameTF = new JTextField();
     private JButton fileNameBrowseButton = new JButton("Browse...");
 
-    private JComboBox clusterTypeCB = new JComboBox();
+    private JComboBox<String> clusterTypeCB = new JComboBox<String>();
 	private JPanel paramsPanel = new JPanel(new CardLayout());
 	
 	private KMeansParamsPanel kmeansParamsPanel = new KMeansParamsPanel();
@@ -194,10 +201,23 @@ public class ClodHopperUI extends JFrame {
 		});
 		
 		statusTA.setEditable(false);
+		
 		// These are probably the defaults.
 		progressBar.setMinimum(0);
 		progressBar.setMaximum(100);
 				
+		scatterPlotPane.addContainerListener(new ContainerListener() {
+			@Override
+			public void componentAdded(ContainerEvent e) {
+			}
+			@Override
+			public void componentRemoved(ContainerEvent e) {
+				if (e.getChild() instanceof ScatterPlot2D) {
+					((ScatterPlot2D) e.getChild()).getDataset().getTupleSelectionModel().removeSelectionListener(ClodHopperUI.this);
+				}
+			}			
+		});
+		
 		JPanel leftTopPanel = new JPanel(new GridBagLayout());
 		leftTopPanel.add(fileNameLbl, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0,
 				GridBagConstraints.EAST, GridBagConstraints.NONE,
@@ -239,13 +259,9 @@ public class ClodHopperUI extends JFrame {
 		
 		paramsPanel.setBorder(BorderFactory.createTitledBorder("Parameters"));
 		
-		scatterPlot.setClustersVisible(true);
-		scatterPlot.setSelectActiveToolOnMousePress(true);
-		
 		leftPanel.add(leftTopPanel, new GridBagConstraints(0, 0, 1, 1, 1.0, 0.0,
 				GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL,
-				new Insets(10, 10, 5, 10), 0, 0));	
-		
+				new Insets(10, 10, 5, 10), 0, 0));			
 		
 		leftPanel.add(paramsPanel, new GridBagConstraints(0, 1, 1, 1, 1.0, 0.0,
 				GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL,
@@ -264,11 +280,31 @@ public class ClodHopperUI extends JFrame {
 				new Insets(0, 10, 10, 10), 0, 0));
 		
 		mainSplitPane.setLeftComponent(leftPanel);
-		mainSplitPane.setRightComponent(scatterPlot);
+		mainSplitPane.setRightComponent(scatterPlotPane);
 		
 		contentPane.add(mainSplitPane, BorderLayout.CENTER);
 		
 		showProperParamsPanel();
+	}
+
+	/**
+	 * Propagates selections between scatter plot panels.
+	 */
+	public void selectionChanged(SelectionEvent e) {
+		if (e.getRequester() != this && e.getSource() instanceof ExampleData) {
+			ExampleData src = (ExampleData) e.getSource();
+			SelectionModel srcModel = src.getTupleSelectionModel();
+			final int tabCount = scatterPlotPane.getTabCount();
+			for (int i=0; i<tabCount; i++) {
+				Component comp = scatterPlotPane.getComponentAt(i);
+				if (comp instanceof ScatterPlot2D) {
+					ExampleData data = ((ScatterPlot2D) comp).getDataset();
+					if (data != src) {
+						data.getTupleSelectionModel().setSelected(this, srcModel.getSelected());
+					}
+				}
+			}
+		}
 	}
 	
 	private synchronized void loadTuples(final String dataPath, final boolean continueWithClustering) {
@@ -460,7 +496,20 @@ public class ClodHopperUI extends JFrame {
 	 */
 	private void saveClusterList() {
 	  
-	  if (clusters != null) {
+	  java.util.List<Cluster> clustersToSave = null;
+	  
+	  int selectedTab = scatterPlotPane.getSelectedIndex();
+	  if (selectedTab >= 0) {
+		  Component c = scatterPlotPane.getComponentAt(selectedTab);
+		  if (c instanceof ScatterPlot2D) {
+			  System.out.printf("Saving clusters for %s\n", scatterPlotPane.getTitleAt(selectedTab));
+			  clustersToSave = ((ScatterPlot2D) c).getDataset().getClusters();
+		  }
+	  } else {
+		clustersToSave = clusters;  
+	  }
+	  
+	  if (clustersToSave != null) {
 	    
 	    if (fileChooser == null) {
 	      fileChooser = new JFileChooser();
@@ -485,7 +534,7 @@ public class ClodHopperUI extends JFrame {
 	        PrintWriter pw = null;
 	        try {
 	          pw = new PrintWriter(new BufferedWriter(new FileWriter(f)));
-	          for (Cluster c : clusters) {
+	          for (Cluster c : clustersToSave) {
 	            pw.println(csvStringForCluster(c));
 	          }
 	        } catch (IOException ioe) {
@@ -511,6 +560,16 @@ public class ClodHopperUI extends JFrame {
       sb.append(c.getMember(i));
     }
     return sb.toString();
+  }
+  
+  private boolean alreadyHasTitle(String title) {
+	  final int tabs = scatterPlotPane.getTabCount();
+	  for (int i=0; i<tabs; i++) {
+		  if (title.equals(scatterPlotPane.getTitleAt(i))) {
+			  return true;
+		  }
+	  }
+	  return false;
   }
 	
 	private void launchFirstTask(Task<?> task) {
@@ -653,10 +712,27 @@ public class ClodHopperUI extends JFrame {
 					tupleProjection = projector.getPointProjection();
 					clusterProjection = projector.getClusterProjection();
 					
-					ExampleData dataset = new ExampleData(tuples, clusters, 
-							tupleProjection, clusterProjection);
+					ExampleData dataset = new ExampleData(tuples, clusters, tupleProjection, clusterProjection);
+					dataset.getTupleSelectionModel().addSelectionListener(ClodHopperUI.this);
 					
+					String tabTitle = clusterTypeCB.getSelectedItem().toString();
+					if (alreadyHasTitle(tabTitle)) {
+						String baseTitle = tabTitle;
+						int n = 2;
+						do {
+							tabTitle = String.format("%s (%d)", baseTitle, n++);
+						} while(alreadyHasTitle(tabTitle));
+					}
+					
+					ScatterPlot2D scatterPlot = new ScatterPlot2D();
 					scatterPlot.setDataset(dataset);
+					scatterPlot.setClustersVisible(true);
+					scatterPlot.setSelectActiveToolOnMousePress(true);
+					
+					int tabNumber = scatterPlotPane.getTabCount();
+					
+					scatterPlotPane.add(tabTitle, scatterPlot);
+					scatterPlotPane.setTabComponentAt(tabNumber, new CloseableTab(scatterPlotPane));
 				}
 				
 			} else if (outcome == TaskOutcome.ERROR) {
