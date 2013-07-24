@@ -13,6 +13,46 @@ import org.junit.Test;
 
 public class TupleKDTreeTest {
 
+  /* Timing the building of a kd-tree by iteratively doubling the tuple count.
+   * With a doubling of N, the time taken typically goes up 2.4X.
+   */
+  /*
+  @Test
+  public void testBuildKDTreeTiming() {
+    
+    int tupleCount = 1000;
+    int tupleLength = 10;
+    
+    DistanceMetric distMetric = new EuclideanDistanceMetric();
+    
+    long lastMsec = 0L;
+    
+    while(tupleCount < 1000000) {
+      
+      int numClusters = (int) Math.sqrt(tupleCount);
+      
+      TupleList tuples = generateTestTuples(tupleCount, tupleLength, numClusters);
+      
+      long tm1 = System.currentTimeMillis();
+      
+      TupleKDTree kdTree = TupleKDTree.forTupleList(tuples, distMetric);
+      
+      long msec = System.currentTimeMillis() - tm1;
+      
+      System.out.printf("%d tuples: time to generate KD-Tree = %d msec\n", tupleCount, msec);
+      
+      if (lastMsec > 0L) {
+        System.out.printf("\tratio to last loop = %5.2f\n", ((double) msec)/lastMsec);
+      }
+      
+      tupleCount *= 2;
+      lastMsec = msec;
+      
+      System.gc();
+    }
+  }
+  */
+  
   @Test
   public void testForTupleList() {
     int tupleCount = 100;
