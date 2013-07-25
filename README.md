@@ -35,33 +35,46 @@ Randall Scarberry, email: drrandys@yahoo.com
 How to get started with ClodHopper:
 -----------------------------------
 
-1. Download a copy of the source code from the Git bash prompt or the Git 
-UI of your choice
+1. If you want to download and browse the code, use git as follows:
+
 	> `git clone https://github.com/rscarberry-wa/clodhopper.git`
 	
-2. In the newly-created clodhopper directory, you will find the subdirectories
-clodhopper and clodhopper_examples.  The first contains a maven project for
+In the newly-created clodhopper directory, you will find the subdirectories
+clodhopper-core and clodhopper_examples.  The first contains a maven project for
 clodhopper proper.  The second contains a project of numerous examples. 
 I recommend importing both projects into eclipse or the IDE of your choice.
 
+2.  If you simply want to use ClodHopper to cluster something in one of your programs, just place this
+dependency into your maven `pom.xml`:
+
+```xml
+<dependency>
+  <groupId>org.battelle</groupId>
+  <artifactId>clodhopper-core</artifactId>
+  <version>1.0.0</version>
+</dependency>
+```
+	
 3. The simplest example shows you how to use k-means to cluster a csv
 file containing numeric data.  The example is contained in the file:
 
-  org/battelle/clodhopper/examples/kmeans/SimpleKMeansDemo.java
+	> `org/battelle/clodhopper/examples/kmeans/SimpleKMeansDemo.java`
+	
+This file is generously commented.
   
 4. Also check out the following demos:
 
-	a. org.battelle.clodhopper.examples.multiple.GeneratedDataPanel
+	> `org.battelle.clodhopper.examples.multiple.GeneratedDataPanel`
 
 	This example runs several of the clustering algorithms in sequence on generated data. As they
 	complete, it display scatter plots with the clusters collapsed into 2 dimensions.
 	You can drag your mouse to select clusters and points in any of the plots and
-	the selections propagate to the others, so you can see how they correspond.
+	the selections propagate to the other plots, indicating how the clusters correspond.
 	
-	b.  org.battelle.clodhopper.examples.ui.ClodHopperUI
+	>  `org.battelle.clodhopper.examples.ui.ClodHopperUI`
 
 	This example permits you to read in a csv data file and cluster the data using many
 	of the algorithms in the library using just about any parameter setting you please.  Then you
 	can save the clustering results in a simple csv file.
 	
-5. Watch for more! ClodHopper is just getting started.
+5. Watch for more on the wiki! ClodHopper is just getting started.

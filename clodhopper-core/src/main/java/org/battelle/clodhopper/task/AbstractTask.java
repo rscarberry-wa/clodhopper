@@ -145,7 +145,7 @@ public abstract class AbstractTask<V> implements Task<V> {
          * Get the beginning progress.
          * @return double
          */
-        protected double getBeginProgress() {
+        public double getBeginProgress() {
             return beginProgress;
         }
 
@@ -153,7 +153,7 @@ public abstract class AbstractTask<V> implements Task<V> {
          * Get the ending progress.
          * @return double
          */
-        protected double getEndProgress() {
+        public double getEndProgress() {
             return endProgress;
         }
         

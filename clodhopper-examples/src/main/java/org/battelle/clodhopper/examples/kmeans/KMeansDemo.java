@@ -562,7 +562,7 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
                 JPanel contentPane = (JPanel) frame.getContentPane();
                 contentPane.setLayout(new BorderLayout());
                 frame.setSize(new Dimension(1200, 900));
-                frame.setTitle("X-Means Demo");
+                frame.setTitle("K-Means Demo");
                 
                 contentPane.add(new KMeansDemo(), BorderLayout.CENTER);
                 frame.validate();
