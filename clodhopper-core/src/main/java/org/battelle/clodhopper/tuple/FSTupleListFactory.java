@@ -126,7 +126,7 @@ public class FSTupleListFactory implements TupleListFactory {
     }
     
     /**
-     * Returns the home directory of the factory.
+     * Returns the home directory.
      * 
      * @return a directory
      * 
