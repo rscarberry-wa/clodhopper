@@ -712,28 +712,39 @@ public class ClodHopperUI extends JFrame implements SelectionListener {
 					tupleProjection = projector.getPointProjection();
 					clusterProjection = projector.getClusterProjection();
 					
-					ExampleData dataset = new ExampleData(tuples, clusters, tupleProjection, clusterProjection);
-					dataset.getTupleSelectionModel().addSelectionListener(ClodHopperUI.this);
+					final ExampleData dataset = new ExampleData(tuples, clusters, tupleProjection, clusterProjection);
 					
-					String tabTitle = clusterTypeCB.getSelectedItem().toString();
-					if (alreadyHasTitle(tabTitle)) {
-						String baseTitle = tabTitle;
-						int n = 2;
-						do {
-							tabTitle = String.format("%s (%d)", baseTitle, n++);
-						} while(alreadyHasTitle(tabTitle));
-					}
+					// Do the rest on the EDT, since it modifies the UI.
+					//
+					SwingUtilities.invokeLater(new Runnable() {
+					  
+					  @Override
+					  public void run() {
 					
-					ScatterPlot2D scatterPlot = new ScatterPlot2D();
-					scatterPlot.setDataset(dataset);
-					scatterPlot.setClustersVisible(true);
-					scatterPlot.setSelectActiveToolOnMousePress(true);
+					    dataset.getTupleSelectionModel().addSelectionListener(ClodHopperUI.this);
 					
-					int tabNumber = scatterPlotPane.getTabCount();
+					    String tabTitle = clusterTypeCB.getSelectedItem().toString();
+					    if (alreadyHasTitle(tabTitle)) {
+					      String baseTitle = tabTitle;
+					      int n = 2;
+					      do {
+					        tabTitle = String.format("%s (%d)", baseTitle, n++);
+					      } while(alreadyHasTitle(tabTitle));
+					    }
 					
-					scatterPlotPane.add(tabTitle, scatterPlot);
-					scatterPlotPane.setTabComponentAt(tabNumber, new CloseableTab(scatterPlotPane));
-					scatterPlotPane.setSelectedIndex(tabNumber);
+					    ScatterPlot2D scatterPlot = new ScatterPlot2D();
+					    scatterPlot.setDataset(dataset);
+					    scatterPlot.setClustersVisible(true);
+					    scatterPlot.setSelectActiveToolOnMousePress(true);
+					
+					    int tabNumber = scatterPlotPane.getTabCount();
+					
+					    scatterPlotPane.add(tabTitle, scatterPlot);
+					    scatterPlotPane.setTabComponentAt(tabNumber, new CloseableTab(scatterPlotPane));
+					    scatterPlotPane.setSelectedIndex(tabNumber);
+					  }
+					
+					});
 				}
 				
 			} else if (outcome == TaskOutcome.ERROR) {
