@@ -126,6 +126,17 @@ public class FSTupleListFactory implements TupleListFactory {
     }
     
     /**
+     * Returns the home directory of the factory.
+     * 
+     * @return a directory
+     * 
+     * @since 1.0.1
+     */
+    public File getDirectory() {
+    	return directory;
+    }
+    
+    /**
      * {@inheritDoc}
      */
     public synchronized Set<String> tupleListNames() {
