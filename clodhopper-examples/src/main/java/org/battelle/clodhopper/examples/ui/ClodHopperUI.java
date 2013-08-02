@@ -912,6 +912,7 @@ public class ClodHopperUI extends JFrame implements SelectionListener {
 
 			ph.postMessage(String.format("%d tuples of length %d loaded from %s", 
 					tuples.getTupleCount(), tuples.getTupleLength(), f.getName()));
+			ph.postMessage(String.format("tuple list class = %s", tuples.getClass().getSimpleName()));
 			
 			// Ends the top-level
 			ph.postEnd();
