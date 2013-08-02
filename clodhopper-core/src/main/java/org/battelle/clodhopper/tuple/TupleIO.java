@@ -50,7 +50,7 @@ public class TupleIO {
 	public static TupleList loadCSV(File file, String nameForTuples, 
 			TupleListFactory factory) throws IOException {
 		try {
-			return loadCSV(file, null, ",", 0, 0, nameForTuples, factory, null);
+			return loadCSV(file, null, ",", 0, 0, nameForTuples, factory, null, null);
 		} catch (CancellationException ce) {
 			throw new IOException("loading canceled", ce);
 		}
@@ -58,9 +58,14 @@ public class TupleIO {
 
 	public static TupleList loadCSV(File file, String nameForTuples, 
 			TupleListFactory factory, Cancelable cancelable) throws IOException, CancellationException {
-		return loadCSV(file, null, ",", 0, 0, nameForTuples, factory, cancelable);
+		return loadCSV(file, null, ",", 0, 0, nameForTuples, factory, cancelable, null);
 	}
 	
+	public static TupleList loadCSV(File file, String nameForTuples, 
+			TupleListFactory factory, Cancelable cancelable, ProgressHandler ph) throws IOException, CancellationException {
+		return loadCSV(file, null, ",", 0, 0, nameForTuples, factory, cancelable, ph);
+	}
+
 	public static TupleList loadCSV(
 			File file, String charSet, 
 			String delimiter, 
@@ -68,7 +73,7 @@ public class TupleIO {
 			String nameForTuples,
 			TupleListFactory factory) throws IOException {
 		try {
-			return loadCSV(file, charSet, delimiter, startColumn, columnCount, nameForTuples, factory, null);
+			return loadCSV(file, charSet, delimiter, startColumn, columnCount, nameForTuples, factory, null, null);
 		} catch (CancellationException ce) {
 			throw new IOException("loading canceled", ce);
 		}
@@ -103,7 +108,8 @@ public class TupleIO {
 			int columnCount,
 			String nameForTuples,
 			TupleListFactory factory,
-			Cancelable cancelable) throws IOException, CancellationException {
+			Cancelable cancelable,
+			ProgressHandler ph) throws IOException, CancellationException {
 
 		if (charSet == null) {
 			charSet = Charset.defaultCharset().name();
@@ -149,6 +155,11 @@ public class TupleIO {
 			int lineNum = -1;
 			int row = 0;
 
+			if (ph != null) {
+				ph.subsection(1.0, rows);
+				ph.postBegin();
+			}
+			
 			while((line = br.readLine()) != null) {
 
 				if (cancelable != null && cancelable.isCanceled()) {
@@ -177,6 +188,10 @@ public class TupleIO {
 							}
 
 							tuples.setTuple(row, buffer);
+							
+							if (ph != null) {
+								ph.postStep();
+							}
 
 						} catch (NoSuchElementException nsee) {
 
@@ -219,6 +234,10 @@ public class TupleIO {
 						logger.error(tlfe);
 					}
 				}
+			}
+			
+			if (ph != null) {
+				ph.postEnd();
 			}
 		}
 

@@ -10,6 +10,8 @@ import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.text.JTextComponent;
 
+import org.battelle.clodhopper.distance.CanberraDistanceMetric;
+import org.battelle.clodhopper.distance.ChebyshevDistanceMetric;
 import org.battelle.clodhopper.distance.CosineDistanceMetric;
 import org.battelle.clodhopper.distance.DistanceMetric;
 import org.battelle.clodhopper.distance.EuclideanDistanceMetric;
@@ -28,6 +30,8 @@ public final class UIUtils {
     
     static {
         DISTANCE_METRICS = new LinkedHashMap<String, DistanceMetric>();
+        DISTANCE_METRICS.put("Canberra", new CanberraDistanceMetric());
+        DISTANCE_METRICS.put("Chebyshev", new ChebyshevDistanceMetric());
         DISTANCE_METRICS.put("Cosine", new CosineDistanceMetric());
         DISTANCE_METRICS.put("Euclidean", new EuclideanDistanceMetric());
         DISTANCE_METRICS.put("Manhattan", new ManhattanDistanceMetric());

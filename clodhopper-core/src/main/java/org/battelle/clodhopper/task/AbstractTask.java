@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
 
@@ -71,14 +72,14 @@ public abstract class AbstractTask<V> implements Task<V> {
         // Cancel flag set by cancel().  Attempting to post a message or
         // progress triggers a CancellationException, which interrupts the
         // run method.
-        private volatile boolean cancelFlag;
+        private AtomicBoolean cancelFlag = new AtomicBoolean();
         // Set to true in postBegun(), which can only be called once.
-        private volatile boolean hasBegun;
+        private AtomicBoolean hasBegun = new AtomicBoolean();
         // Set to true in postEnded(), which also can only be called once.
-        private volatile boolean hasEnded;
+        private AtomicBoolean hasEnded = new AtomicBoolean();
         
         // Set to true by pause;
-        private volatile boolean pauseFlag;
+        private AtomicBoolean pauseFlag = new AtomicBoolean();
 
         // Endpoints for progress reporting.  To have the expected effect,
         // these must be set before the task is started.
@@ -131,7 +132,7 @@ public abstract class AbstractTask<V> implements Task<V> {
                         "invalid progress endpoints (begin == " + begin
                         + ", end == " + end + ")");
             }
-            if (hasBegun) {
+            if (hasBegun.get()) {
                 throw new IllegalStateException(
                         "endpoints must be set before running the AbstractTask"
                 );
@@ -169,7 +170,7 @@ public abstract class AbstractTask<V> implements Task<V> {
          *   while waiting.
          */
         public V get() throws InterruptedException, ExecutionException {
-            while(!hasEnded) {
+            while(!hasEnded.get()) {
                 synchronized (this) {
                    wait();
                 }
@@ -194,13 +195,13 @@ public abstract class AbstractTask<V> implements Task<V> {
         public V get(long timeout, TimeUnit unit) 
             throws InterruptedException, ExecutionException, TimeoutException {
             long timeLimit = System.currentTimeMillis() + unit.toMillis(timeout);
-            while(!hasEnded) {
+            while(!hasEnded.get()) {
                 long timeToWait = timeLimit - System.currentTimeMillis();
                 if (timeToWait > 0) {
                     synchronized (this) {
                         wait(timeToWait);
                     }
-                } else if (!hasEnded) {
+                } else if (!hasEnded.get()) {
                     throw new TimeoutException();
                 }
             }
@@ -228,15 +229,14 @@ public abstract class AbstractTask<V> implements Task<V> {
         /** Returns true if this task has been paused. 
          */
         public boolean isPaused() {
-        	return pauseFlag;
+        	return pauseFlag.get();
         }
         
         /**
          * Pause this task if it is running.
          */
         public synchronized void pause() {
-        	if (!pauseFlag && this.isBegun() && !this.isEnded()) {
-        		pauseFlag = true;
+        	if (this.isBegun() && !this.isEnded() && pauseFlag.compareAndSet(false, true)) {
         		notifyAll();
         	}
         }
@@ -245,8 +245,7 @@ public abstract class AbstractTask<V> implements Task<V> {
          * Resumes this task if it is paused.
          */
         public synchronized void play() {
-        	if (pauseFlag) {
-        		pauseFlag = false;
+        	if (pauseFlag.compareAndSet(true, false)) {
         		notifyAll();
         	}
         }
@@ -258,13 +257,14 @@ public abstract class AbstractTask<V> implements Task<V> {
          * @throws IllegalStateException - if the task is currently ongoing.
          */
         public void reset() {
-            if (hasBegun) {
-                if (hasEnded) {
+            if (hasBegun.get()) {
+                if (hasEnded.get()) {
                     outcome = TaskOutcome.NOT_FINISHED;
                     error = null;
                     errorMsg = null;
-                    cancelFlag = false;
-                    hasBegun = hasEnded = false;
+                    cancelFlag.set(false);
+                    hasBegun.set(false);
+                    hasEnded.set(false);
                     result = null;
                 } else {
                     throw new IllegalStateException("cannot reset while running");
@@ -282,7 +282,7 @@ public abstract class AbstractTask<V> implements Task<V> {
         	// Set mOwner to the current thread.  If another thread has already
             // gained the ownership, this will throw a RejectedExecutionException.
             obtainOwnership();
-            
+                        
             try {
                 
             	// Reset in case the task is being reused.
@@ -290,12 +290,18 @@ public abstract class AbstractTask<V> implements Task<V> {
                 
                 // Post an initial TaskEvent and set mHasBegun to true.
                 postBegun();
-                hasBegun = true;
+                hasBegun.set(true);
+                
+                long nsStart = System.nanoTime();
                 
                 // Perform the work of the task by calling the 
                 // subclass' doTask method.
                 //
                 result = doTask();
+                
+                long nsTaken = System.nanoTime() - nsStart;
+            	
+                postMessage(timeTakenString(nsTaken) + " to complete task");
                 
                 // In case error() was called off from off the owning thread,
                 // possibly by a subtask thread.  (If called on the owning thread,
@@ -356,12 +362,38 @@ public abstract class AbstractTask<V> implements Task<V> {
             	if (outcome == TaskOutcome.NOT_FINISHED) {
                     outcome = TaskOutcome.SUCCESS;
                 }
+            	
                 // Post the final event.
                 postEnded();
                 
                 // Set mOwner back to null.
                 releaseOwnership();            
             }
+        }
+        
+        private static String timeTakenString(long nanoSeconds) {
+        	long hours = nanoSeconds/3600000000000L;
+        	if (hours > 0) {
+        		nanoSeconds %= 3600000000000L;
+        	}
+        	long minutes = nanoSeconds/60000000000L;
+        	if (minutes > 0) {
+        		nanoSeconds %= 60000000000L;
+        	}
+        	long seconds = nanoSeconds/1000000000L;
+        	if (seconds > 0) {
+        		nanoSeconds %= 1000000000L;
+        	}
+        	long milliseconds = nanoSeconds/1000000L;
+        	if (hours > 0L) {
+        		return String.format("%d hours, %d minutes, and %d seconds", hours, minutes, seconds);
+        	} else if (minutes > 0L) {
+        		return String.format("%d minutes, %d seconds, and %d msec", minutes, seconds, milliseconds);
+        	} else if (seconds > 0L) {
+        		return String.format("%d seconds, %d msec", seconds, milliseconds);
+        	} else {
+        		return String.format("%d msec", milliseconds);
+        	}
         }
 
         // Logically, only one thread should be executing the task at a time.  
@@ -388,11 +420,11 @@ public abstract class AbstractTask<V> implements Task<V> {
          */
         public boolean cancel(boolean mayInterruptIfRunning) {
             if (!isBegun() || mayInterruptIfRunning) {
-                if (!(cancelFlag || isEnded())) {
-                    cancelFlag = true;
+                if (!(cancelFlag.get() || isEnded())) {
+                    cancelFlag.set(true);
                     // Break from the hang in checkForCancel() if
                     // paused.
-                    if (pauseFlag) {
+                    if (pauseFlag.get()) {
                     	synchronized (this) {
                     		notifyAll();
                     	}
@@ -418,7 +450,7 @@ public abstract class AbstractTask<V> implements Task<V> {
          * This version is mandated by the Future<V> interface.
          */
         public boolean isCancelled() {
-            return cancelFlag;
+            return cancelFlag.get();
         }
         
         @Override
@@ -436,7 +468,7 @@ public abstract class AbstractTask<V> implements Task<V> {
          *    How it finished is determined by call getTaskOutcome().
          */
         public boolean isDone() {
-            return hasEnded;
+            return hasEnded.get();
         }
 
         /**
@@ -500,7 +532,7 @@ public abstract class AbstractTask<V> implements Task<V> {
          * @return boolean
          */
         public boolean isBegun() {
-            return hasBegun;
+            return hasBegun.get();
         }
 
         /**
@@ -529,7 +561,7 @@ public abstract class AbstractTask<V> implements Task<V> {
         // Posts the first TaskEvent to registered listeners by calling their
         // taskBegun() methods.
         private void postBegun() {
-        	if (!hasBegun) {
+        	if (!hasBegun.get()) {
         		eventSupport.fireTaskBegun();
             }
         }
@@ -537,7 +569,7 @@ public abstract class AbstractTask<V> implements Task<V> {
         // Posts a message to registered listeners by calling their taskMessage() methods,
         // but first checks status flags and for cancellation.
         protected void postMessage(String msg) {
-            if (hasBegun && !hasEnded) {
+            if (hasBegun.get() && !hasEnded.get()) {
                 checkForCancel();
             }
             transmitMessage(msg);
@@ -551,7 +583,7 @@ public abstract class AbstractTask<V> implements Task<V> {
         // Notifies registered listeners of the current progress by calling
         // their taskProgress() methods.
         protected void postProgress(double progress) {
-            if (hasBegun && !hasEnded) {
+            if (hasBegun.get() && !hasEnded.get()) {
                 checkForCancel();
                 this.progress = progress;
                 eventSupport.fireTaskProgress();
@@ -559,8 +591,8 @@ public abstract class AbstractTask<V> implements Task<V> {
         }
 
         private void postEnded() {
-            if (hasBegun && !hasEnded) {
-                hasEnded = true;
+            if (hasBegun.get() && !hasEnded.get()) {
+                hasEnded.set(true);
                 synchronized (this) {
                     notifyAll();
                 }
@@ -570,17 +602,17 @@ public abstract class AbstractTask<V> implements Task<V> {
         
         protected void checkForCancel() {
         	// Whenever cancelled, pop a CancellationException
-        	if (cancelFlag) {
+        	if (cancelFlag.get()) {
         		throw new CancellationException();
         	}
         	// But if paused, hang here until play() is called.
-        	if (pauseFlag) {
+        	if (pauseFlag.get()) {
         		// Post a pause message, but not through postMessage(), since
         		// it calls this method.
         		eventSupport.fireTaskPaused();
         		// Hang in this loop until either play() or cancel() is called.
         		synchronized (this) {
-        			while (pauseFlag && !cancelFlag) {
+        			while (pauseFlag.get() && !cancelFlag.get()) {
         				try {
         					wait(1000L);
         				} catch (InterruptedException ie) {
@@ -588,7 +620,7 @@ public abstract class AbstractTask<V> implements Task<V> {
         			}
         		}
             	// Whenever cancelled, pop a CancellationException
-            	if (cancelFlag) {
+            	if (cancelFlag.get()) {
             		throw new CancellationException();
             	}
             	eventSupport.fireTaskResumed();
