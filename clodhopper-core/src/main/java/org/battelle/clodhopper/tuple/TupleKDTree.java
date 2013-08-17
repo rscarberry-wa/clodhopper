@@ -8,17 +8,36 @@ import java.util.LinkedList;
 
 import org.battelle.clodhopper.distance.DistanceMetric;
 
+/**
+ * Represents a KD-Tree for points represented as tuples within a <code>TupleList</code>.
+ * 
+ * @author R. Scarberry
+ * @since 1.0.1
+ *
+ */
 public class TupleKDTree {
 
+  // All points stored in this kd-tree must be from this tuple list.
   private TupleList tuples;
+  // The distance metric used for any distance computations, such as
+  // those used for computing nearest neighbors.
   private DistanceMetric distanceMetric;
+  // The maximum index for tuples that can be added to this kd-tree.
+  // This is equal to the tuple count minus 1.
   private int maxNdx;
 
+  // Contains the indexes of tuples that have been added. -1 means empty.
   private int[] nodes;
+  // lefts and rights correspond 1:1 with elements of nodes. If nodes[n] contains a tuple index,
+  // lefts[n] contains an index into nodes of the left child tuple. rights[n] contains the index into
+  // nodes of the right child tuple. -1 indicates no child set.
   private int[] lefts;
   private int[] rights;
+  // Set to true if a previously-added tuple has been removed. Rather than reshuffle the elements of the arrays,
+  // the flag is simply flipped.
   private boolean[] deleted;
 
+  // Number of tuples that have been added.
   private int count;
 
   public TupleKDTree(TupleList tuples, DistanceMetric distanceMetric) {
@@ -39,6 +58,14 @@ public class TupleKDTree {
     return distanceMetric;
   }
 
+  /**
+   * Factory method that builds a kd-tree from a tuple list by 
+   * adding every tuple.
+   * 
+   * @param tuples
+   * @param distanceMetric
+   * @return
+   */
   public static TupleKDTree forTupleList(TupleList tuples,
       DistanceMetric distanceMetric) {
     TupleKDTree kd = new TupleKDTree(tuples, distanceMetric);
@@ -83,6 +110,7 @@ public class TupleKDTree {
     count++;
     ensureCapacity(count);
     nodes[m] = ndx;
+    // Set to the index into nodes, not the tuple index itself.
     lefts[parentIndex] = m;
   }
 
@@ -112,106 +140,150 @@ public class TupleKDTree {
       return;
     }
 
+    // Current node index
     int n = 0;
-    int level = 0;
-    int dim = tuples.getTupleLength();
+    // Search depth into the tree
+    int depth = 0;
+    // Total # of tuple dimensions
+    final int dim = tuples.getTupleLength();
 
     while (true) {
+    	
       int curNode = nodes[n];
+      
       if (curNode == ndx) {
-        if (deleted[n]) {
-          deleted[n] = false;
-          return;
-        }
-        throw new IllegalArgumentException("duplicate insertion: " + ndx);
+      
+    	  // If inserted before and then deleted, just reset the delete flag.
+    	  if (deleted[n]) {
+    		  deleted[n] = false;
+    		  return;
+    	  }
+        
+    	  // Not allowed to insert the same tuple more than once.
+    	  throw new IllegalArgumentException("duplicate insertion: " + ndx);
+      
       } else {
 
-        int d = level % dim;
+    	  // Pick the dimension for comparison, which cycles from 0 to (dim-1), then
+    	  // starts over.
+    	  int d = depth % dim;
 
-        double coord = tuples.getTupleValue(ndx, d);
+    	  double coord = tuples.getTupleValue(ndx, d);
 
-        double nodeCoord = tuples.getTupleValue(curNode, d);
-        if (coord > nodeCoord) {
-          if (rights[n] < 0) {
-            newNodeOnRight(n, ndx);
-            return;
-          } else {
-            n = rights[n];
-          }
-        } else {
-          if (lefts[n] < 0) {
-            newNodeOnLeft(n, ndx);
-            return;
-          } else {
-            n = lefts[n];
-          }
-        }
+    	  double nodeCoord = tuples.getTupleValue(curNode, d);
+        
+    	  if (coord > nodeCoord) {
+    		  
+    		  // Make it the right child of the current node, if the right child has not been set.
+    		  if (rights[n] < 0) {
+    			  newNodeOnRight(n, ndx);
+    			  return;
+    		  } else {
+    			  n = rights[n];
+    		  }
+        
+    	  } else { // coord <= nodeCoord
+    		  
+    		  // If left child has not been set, make it the left child.
+    		  if (lefts[n] < 0) {
+    			  newNodeOnLeft(n, ndx);
+    			  return;
+    		  } else {
+    			  n = lefts[n];
+    		  }
+    		  
+    	  }
       }
-      level++;
+      
+      depth++;
+      
     } // while
+    
   }
 
-  public void delete(int ndx) {
+  public boolean delete(int ndx) {
 
-    checkNdx(ndx);
+	  checkNdx(ndx);
 
-    if (count == 0) {
-      return;
-    }
+	  // Can't delete anything if empty.
+	  if (count == 0) {
+		  return false;
+	  }
 
-    int n = 0;
-    int level = 0;
-    int dim = tuples.getTupleLength();
+	  int n = 0;
+	  int depth = 0;
+	  final int dim = tuples.getTupleLength();
 
-    while (true) {
-      int curNode = nodes[n];
-      if (curNode == ndx) {
-        deleted[n] = true;
-        return;
-      } else {
-        int d = level % dim;
-        double coord = tuples.getTupleValue(ndx, d);
-        double nodeCoord = tuples.getTupleValue(curNode, d);
-        if (coord > nodeCoord) {
-          if (rights[n] < 0) {
-            return;
-          } else {
-            n = rights[n];
-          }
-        } else {
-          if (lefts[n] < 0) {
-            return;
-          } else {
-            n = lefts[n];
-          }
-        }
-      }
-      level++;
-    } // while
+	  while (true) {
+		  int curNode = nodes[n];
+		  if (curNode == ndx) {
+			  deleted[n] = true;
+			  return true;
+		  } else {
+			  int d = depth % dim;
+			  double coord = tuples.getTupleValue(ndx, d);
+			  double nodeCoord = tuples.getTupleValue(curNode, d);
+			  if (coord > nodeCoord) {
+				  if (rights[n] < 0) {
+					  return false;
+				  } else {
+					  n = rights[n];
+				  }
+			  } else {
+				  if (lefts[n] < 0) {
+					  return false;
+				  } else {
+					  n = lefts[n];
+				  }
+			  }
+		  }
+		  depth++;
+	  } // while
   }
 
+  /**
+   * Searches for an added tuple having the specified values. This method only returns
+   * a non-zero tuple index if an exact match is found. Use <code>closeTo()</code> to find close
+   * matches.
+   * 
+   * @param coords
+   * 
+   * @return the tuple index if the values are matched exactly, -1 otherwise.
+   */
   public int search(double[] coords) {
 
     int n = 0;
-    int level = 0;
+    int depth = 0;
     final int dim = tuples.getTupleLength();
+    
+    // Buffer for scooping out data for comparison.
     final double[] nodeCoords = new double[dim];
 
     while (true) {
-      int curNode = (n >= 0 && n < count) ? nodes[n] : -1;
-      if (curNode < 0)
-        return -1; // Not found.
-      tuples.getTuple(curNode, nodeCoords);
-      if (!deleted[n] && coordsEqual(coords, nodeCoords)) {
-        return curNode;
-      }
-      int d = level % dim;
-      if (coords[d] > nodeCoords[d]) {
-        n = rights[n];
-      } else {
-        n = lefts[n];
-      }
-      level++;
+      
+    	
+    	int curNode = (n >= 0 && n < count) ? nodes[n] : -1;
+    	
+    	if (curNode < 0) {
+    		return -1; // Not found.
+    	}
+    	
+    	tuples.getTuple(curNode, nodeCoords);
+    	
+    	if (!deleted[n] && coordsEqual(coords, nodeCoords)) {
+    		return curNode;
+    	}
+      
+    	int d = depth % dim;
+    	
+    	if (coords[d] > nodeCoords[d]) {
+    		n = rights[n];
+    	} else {
+    		n = lefts[n];
+    	}
+      
+    	depth++;
+    	
     } // while
 
   }
@@ -221,6 +293,7 @@ public class TupleKDTree {
     checkNdx(ndx);
 
     double[] coords = new double[tuples.getTupleLength()];
+    
     tuples.getTuple(ndx, coords);
 
     int[] nn = nearest(coords, 2);

@@ -50,7 +50,7 @@ import org.apache.log4j.Logger;
  * @since 1.0
  */
 public abstract class AbstractTask<V> implements Task<V> {
-
+	
         private static final Logger LOGGER = Logger.getLogger(AbstractTask.class);
         
         // The outcome of the AbstractTask.  Never null, but NOT_FINISHED means what
