@@ -133,7 +133,7 @@ public class FileDistanceCache implements DistanceCache {
 	 * 
 	 * @return
 	 */
-	public boolean isOpen() {
+	public synchronized boolean isOpen() {
 		return raFile != null;
 	}
 	
