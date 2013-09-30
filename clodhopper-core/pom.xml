@@ -13,12 +13,12 @@
   
   <dependencies>
     <dependency>
-	<groupId>net.sf.trove4j</groupId>
-	<artifactId>trove4j</artifactId>
+        <groupId>net.sf.trove4j</groupId>
+        <artifactId>trove4j</artifactId>
     </dependency>
     <dependency>
-	<groupId>log4j</groupId>
-	<artifactId>log4j</artifactId>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
     </dependency>
     <dependency>
     	<groupId>junit</groupId>

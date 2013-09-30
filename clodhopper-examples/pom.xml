@@ -13,21 +13,21 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.battelle</groupId>
-      <artifactId>clodhopper-core</artifactId>
-      <version>${project.version}</version>
+        <groupId>org.battelle</groupId>
+        <artifactId>clodhopper-core</artifactId>
+            <version>${project.version}</version>
     </dependency>
     <dependency>
-	<groupId>net.sf.trove4j</groupId>
-	<artifactId>trove4j</artifactId>
+        <groupId>net.sf.trove4j</groupId>
+        <artifactId>trove4j</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-math3</artifactId>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-math3</artifactId>
     </dependency>
     <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
     </dependency>
     <dependency>
     	<groupId>junit</groupId>
