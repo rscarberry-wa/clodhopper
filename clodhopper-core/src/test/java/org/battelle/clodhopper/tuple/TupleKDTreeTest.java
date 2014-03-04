@@ -60,7 +60,7 @@ public class TupleKDTreeTest {
     int tupleLength = 10;
     int nnCount = 5;
     
-    TupleList tuples = generateTestTuples(tupleCount, tupleLength, numClusters);
+    TupleList tuples = generateTestTuples(tupleCount, tupleLength, numClusters, 123L);
     DistanceMetric distMetric = new EuclideanDistanceMetric();
 
     TupleKDTree kdTree = TupleKDTree.forTupleList(tuples, distMetric);
@@ -71,29 +71,87 @@ public class TupleKDTreeTest {
     List<TupleKDTree.DistanceEntry> distEntries = sortedDistanceEntries(ndx, tuples, distMetric);
     System.out.printf("Using dumb searching, the %d nearest neighbors are:\n", nnCount);
     final int lim = Math.min(nnCount, distEntries.size());
+
+    int[] dumbNns = new int[lim];
     for (int i=0; i<lim; i++) {
       TupleKDTree.DistanceEntry entry = distEntries.get(i);
-      System.out.printf("\tIndex = %d, distance = %5.2f\n", entry.getIndex(), entry.getDistance());
+      dumbNns[i] = entry.getIndex();
     }
     
     int[] nns = kdTree.nearest(ndx, nnCount);
+
+    for (int i=0; i<lim; i++) {
+        assertTrue(dumbNns[i] == nns[i]);
+    }
     
     double[] buf1 = new double[tupleLength];
     double[] buf2 = new double[tupleLength];
     
     tuples.getTuple(ndx, buf1);
     tuples.getTuple(nns[nns.length - 1], buf2);
-    
-    
+        
     double md = distMetric.distance(buf1, buf2);
     int[] closeto = kdTree.closeTo(ndx, md);
     
+    System.out.println("    md  = " + md);
     System.out.println("    ndx = " + ndx);
     System.out.println("    nns = " + toStr(nns));
     System.out.println("closeTo = " + toStr(closeto));
   
+    TupleKDTree.KDNode node = kdTree.getRoot();
+    System.out.println("root balance factor = " + node.balanceFactor());
   }
   
+  @Test
+  public void testForTupleListBalanced() {
+      
+    int tupleCount = 100;
+    int numClusters = 10;
+    int tupleLength = 10;
+    int nnCount = 5;
+    
+    TupleList tuples = generateTestTuples(tupleCount, tupleLength, numClusters, 123L);
+    DistanceMetric distMetric = new EuclideanDistanceMetric();
+
+    TupleKDTree kdTree = TupleKDTree.forTupleListBalanced(tuples, distMetric);
+
+    Random random = new Random(123L);
+    int ndx = random.nextInt(tupleCount);
+    
+    List<TupleKDTree.DistanceEntry> distEntries = sortedDistanceEntries(ndx, tuples, distMetric);
+    System.out.printf("Using dumb searching, the %d nearest neighbors are:\n", nnCount);
+    final int lim = Math.min(nnCount, distEntries.size());
+
+    int[] dumbNns = new int[lim];
+    for (int i=0; i<lim; i++) {
+      TupleKDTree.DistanceEntry entry = distEntries.get(i);
+      dumbNns[i] = entry.getIndex();
+    }
+    
+    int[] nns = kdTree.nearest(ndx, nnCount);
+
+    for (int i=0; i<lim; i++) {
+        assertTrue(dumbNns[i] == nns[i]);
+    }
+    
+    double[] buf1 = new double[tupleLength];
+    double[] buf2 = new double[tupleLength];
+    
+    tuples.getTuple(ndx, buf1);
+    tuples.getTuple(nns[nns.length - 1], buf2);
+     
+    double md = distMetric.distance(buf1, buf2);
+    int[] closeto = kdTree.closeTo(ndx, md);
+    
+    System.out.println("    md  = " + md);
+    System.out.println("    ndx = " + ndx);
+    System.out.println("    nns = " + toStr(nns));
+    System.out.println("closeTo = " + toStr(closeto));
+ 
+    TupleKDTree.KDNode node = kdTree.getRoot();
+    System.out.println("root balance factor = " + node.balanceFactor());
+  }
+
   private static List<TupleKDTree.DistanceEntry> sortedDistanceEntries(int ndx, TupleList tuples, DistanceMetric distanceMetric) {
     
     final int tupleCount = tuples.getTupleCount();
@@ -126,12 +184,12 @@ public class TupleKDTreeTest {
     return sb.toString();
   }
 
-  private static TupleList generateTestTuples(int tupleCount, int tupleLength, int numClusters) {
+  private static TupleList generateTestTuples(int tupleCount, int tupleLength, int numClusters, long seed) {
     
     // The exemplars are the random points to use as the cluster centers.
     double[][] exemplars = new double[numClusters][tupleLength];
     
-    Random random = new Random();
+    Random random = new Random(seed);
     
     for (int i=0; i<numClusters; i++) {
       double[] exemplar = exemplars[i];

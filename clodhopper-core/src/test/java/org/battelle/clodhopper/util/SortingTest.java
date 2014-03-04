@@ -33,38 +33,113 @@ import org.junit.Test;
  * SortingTest.java
  *
  *===================================================================*/
-
 public class SortingTest {
 
-	@Test
-	public void testParallelSort() {
+    @Test
+    public void testParallelSort() {
 
-		final int numValues = 1000;
-		
-		double[] dValues = new double[numValues];
-		int[] iValues = new int[numValues];
-		
-		Map<Double, Integer> checkMap = new HashMap<Double, Integer> ();
-		
-		Random random = new Random();
-		for (int i=0; i<numValues; i++) {
-			double d = random.nextDouble();
-			dValues[i] = d;
-			iValues[i] = i;	
-			checkMap.put(d, i);
-		}
-		
-		double[] dValuesCopy = (double[]) dValues.clone();
-		
-		Sorting.parallelSort(dValues, iValues);
-		
-		Arrays.sort(dValuesCopy);
-		
-		for (int i=0; i<numValues; i++) {
-			assertTrue(dValuesCopy[i] == dValues[i]);
-			assertTrue(checkMap.get(dValues[i]).intValue() == iValues[i]);
-		}
-	}
+        final int numValues = 1000;
+
+        double[] dValues = new double[numValues];
+        int[] iValues = new int[numValues];
+
+        Map<Double, Integer> checkMap = new HashMap<Double, Integer>();
+
+        Random random = new Random();
+        for (int i = 0; i < numValues; i++) {
+            double d = random.nextDouble();
+            dValues[i] = d;
+            iValues[i] = i;
+            checkMap.put(d, i);
+        }
+
+        double[] dValuesCopy = (double[]) dValues.clone();
+
+        Sorting.parallelSort(dValues, iValues);
+
+        Arrays.sort(dValuesCopy);
+
+        for (int i = 0; i < numValues; i++) {
+            assertTrue(dValuesCopy[i] == dValues[i]);
+            assertTrue(checkMap.get(dValues[i]).intValue() == iValues[i]);
+        }
+    }
+
+    @Test
+    public void testMedianOf3() {
+        
+        final int loops = 100;
+        
+        Random random = new Random();
+        
+        for (int i = 0; i < loops; i++) {
+            
+            int len = 10 + random.nextInt(50);
+            int[] values = new int[len];
+            
+            for (int j = 0; j < len; j++) {
+                values[j] = random.nextInt();
+            }
+            
+            IntComparator comp = new SimpleIntComparator();
+            
+            final int x = 0;
+            final int m = len>>1;
+            final int y = len-1;
+            
+            int med = Sorting.medianOf3(values, x, m, y, comp);
+            int[] otherTwo;
+            
+            if (med == x) {
+                otherTwo = new int[] { m, y };
+            } else if (med == m) {
+                otherTwo = new int[] { x, y };
+            } else {
+                otherTwo = new int[] { x, m };
+            }
+            
+            boolean foundLE = false;
+            boolean foundGE = false;
+            
+            for (int j=0; j<otherTwo.length; j++) {
+                if (!foundLE && values[otherTwo[j]] <= values[med]) {
+                    foundLE = true;
+                }
+                if (!foundGE && values[otherTwo[j]] >= values[med]) {
+                    foundGE = true;
+                }
+            }
+            
+            assertTrue(foundLE && foundGE);
+        }
+    }
+
+    @Test
+    public void testPartitionIndices() {
+
+        Random random = new Random();
+        final int count = 50 + random.nextInt(100);
+
+        final int[] values = new int[count];
+        for (int i = 0; i < count; i++) {
+            values[i] = random.nextInt(10);
+        }
+
+        int m = 1 + (count - 1 + 0) / 2;
+
+        int pi = Sorting.partitionIndices(values, m, 0, count - 1, new SimpleIntComparator());
+
+        checkPartitionIndex(values, pi);
+    }
+
+    private void checkPartitionIndex(int[] values, int pi) {
+        for (int i = 0; i < pi; i++) {
+            assertTrue(values[i] <= values[pi]);
+        }
+        for (int i = pi + 1; i < values.length; i++) {
+            assertTrue(values[i] > values[pi]);
+        }
+    }
 
 //	@Test 
 //	public void testQuickSort1() {
@@ -94,4 +169,15 @@ public class SortingTest {
 //			assertTrue(values1[i] == values2[i]);
 //		}
 //	}
+    static class SimpleIntComparator implements IntComparator {
+
+        SimpleIntComparator() {
+        }
+
+        @Override
+        public int compare(int n1, int n2) {
+            return n1 < n2 ? -1 : n1 > n2 ? +1 : 0;
+        }
+
+    }
 }

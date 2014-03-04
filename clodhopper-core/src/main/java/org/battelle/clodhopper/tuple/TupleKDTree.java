@@ -7,6 +7,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 
 import org.battelle.clodhopper.distance.DistanceMetric;
+import org.battelle.clodhopper.util.IntComparator;
+import org.battelle.clodhopper.util.Sorting;
 
 /**
  * Represents a KD-Tree for points represented as tuples within a <code>TupleList</code>.
@@ -36,6 +38,108 @@ public class TupleKDTree {
   // Set to true if a previously-added tuple has been removed. Rather than reshuffle the elements of the arrays,
   // the flag is simply flipped.
   private boolean[] deleted;
+  
+  public class KDNode {
+      
+      private final int index;
+      private final int dim;
+      
+      private KDNode(final int index, final int dim) {
+          this.index = index;
+          this.dim = dim;
+      }
+      
+      public boolean isLeaf() {
+          return lefts[index] < 0 && rights[index] < 0;
+      }
+      
+      public int getTupleIndex() {
+          return nodes[index];
+      }
+      
+      public boolean hasLeft() {
+          return lefts[index] >= 0;
+      }
+      
+      public boolean hasRight() {
+          return rights[index] >= 0;
+      }
+      
+      public KDNode getLeft() {
+          final int leftIndex = lefts[index];
+          if (leftIndex >= 0) {
+              return new KDNode(leftIndex, (dim+1)%getDimensions());
+          }
+          return null;
+      }
+
+      public KDNode getRight() {
+          final int rightIndex = rights[index];
+          if (rightIndex >= 0) {
+              return new KDNode(rightIndex, (dim+1)%getDimensions());
+          }
+          return null;
+      }
+      
+      public int descendantsOnLeft() {
+          KDNode left = getLeft();
+          if (left != null) {
+              return 1 + left.descendantsOnLeft() + left.descendantsOnRight();
+          }
+          return 0;
+      }
+      
+      public int descendantsOnRight() {
+          KDNode right = getRight();
+          if (right != null) {
+              return 1 + right.descendantsOnLeft() + right.descendantsOnRight();
+          }
+          return 0;
+      }
+      
+      public boolean isDeleted() {
+          return deleted[index];
+      }
+      
+      /**
+       * Returns the balance factor for the node. If a node is perfectly balanced, 
+       * that is, having the same number of descendants on the left as on the right,
+       * the balance factor will be 1.0.  Imbalanced nodes always return a balance factor
+       * with an absolute values greater than 1.0. However, if the number of descendants
+       * on the right is greater than the number of descendants on the left, the balance
+       * factor is negative. Leaf nodes have a balance factor of NaN.
+       * 
+       * @return 
+       */
+      public double balanceFactor() {
+          
+          final int onLeft = descendantsOnLeft();
+          final int onRight = descendantsOnRight();
+          
+          int min = Math.min(onLeft, onRight);
+          int max = Math.max(onLeft, onRight);
+          
+          // More descendants on the left than on the right.
+          boolean positiveSlope = onLeft > onRight;
+          
+          if (max > 0) {
+              double slope;
+              if (min > 0) {
+                  slope = ((double) max)/min;
+                  if (!positiveSlope) {
+                      slope = -slope;
+                  }
+              } else {
+                  slope = positiveSlope ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
+              }
+              return slope;
+          }
+          
+          // onLeft == onRight == 0.
+          return Double.NaN;
+      }
+      
+  }
 
   // Number of tuples that have been added.
   private int count;
@@ -49,6 +153,13 @@ public class TupleKDTree {
     maxNdx = tuples.getTupleCount() - 1;
     ensureCapacity(100);
   }
+  
+  public KDNode getRoot() {
+      if (count > 0) {
+          return new KDNode(0, 0);
+      }
+      return null;
+  }
 
   public TupleList getTupleList() {
     return tuples;
@@ -56,6 +167,10 @@ public class TupleKDTree {
 
   public DistanceMetric getDistanceMetric() {
     return distanceMetric;
+  }
+  
+  public int getDimensions() {
+      return tuples.getTupleLength();
   }
 
   /**
@@ -75,7 +190,60 @@ public class TupleKDTree {
     }
     return kd;
   }
-
+  
+  public static TupleKDTree forTupleListBalanced(TupleList tuples,
+          DistanceMetric distanceMetric) {
+      final TupleKDTree kd = new TupleKDTree(tuples, distanceMetric);
+      final int tupleCount = tuples.getTupleCount();
+      final int tupleLen = tuples.getTupleLength();
+      final int[] tupleIndices = new int[tupleCount];
+      for (int i=0; i<tupleCount; i++) {
+          tupleIndices[i] = i;
+      }
+      final IntComparator[] comparators = new IntComparator[tupleLen];
+      for (int dim=0; dim<tupleLen; dim++) {
+          comparators[dim] = new TupleIndexComparator(tuples, dim);
+      }
+      generateBalanced(kd, tupleIndices, 0, tupleIndices.length - 1, 0, comparators);
+      return kd;
+  }
+  
+  private static void generateBalanced(
+          TupleKDTree kdtree, 
+          int[] indices, 
+          int left, 
+          int right, 
+          int dim, 
+          IntComparator[] comparators) {
+      
+      if (left <= right) {
+          
+          if (left == right) {
+           
+              kdtree.insert(indices[left]);
+          
+          } else {
+          
+              int mid = 1 + (right - left)/2;              
+              int partitionIndex = Sorting.partitionIndices(indices, mid, left, right, comparators[dim]);
+          
+              kdtree.insert(indices[partitionIndex]);
+              
+              int n = partitionIndex - 1;
+              int nextDim = (dim + 1)%kdtree.getDimensions();
+              if (n >= left) {
+                  generateBalanced(kdtree, indices, left, n, nextDim, comparators);
+              }
+              
+              n = partitionIndex + 1;
+              if (n <= right) {
+                  generateBalanced(kdtree, indices, n, right, nextDim, comparators);
+              }
+          }
+       
+      }
+  }
+  
   private void ensureCapacity(int minCap) {
     int curCap = currentCapacity();
     if (curCap < minCap) {
@@ -425,7 +593,7 @@ public class TupleKDTree {
 
     int curNode = nodes[curNodeNdx];
     if (curNode < 0) {
-      return;
+       return;
     }
 
     // Component of coords to use for splitting.
@@ -495,7 +663,7 @@ public class TupleKDTree {
       }
     }
 
-    if (!deleted[curNodeNdx] && curNodeNdx != ndxToExclude) {
+    if (!deleted[curNodeNdx] && curNode != ndxToExclude) {
       double curToTarget = distanceMetric.distance(curCoords, targetCoords);
       if (curToTarget < maxDistance) {
         addToDistanceList(distanceList, new DistanceEntry(curNode, curToTarget), num);
@@ -583,7 +751,7 @@ public class TupleKDTree {
       }
     }
 
-    if (!deleted[curNodeNdx] && curNodeNdx != ndxToExclude) {
+    if (!deleted[curNodeNdx] && curNode != ndxToExclude) {
       double curToTarget = distanceMetric.distance(curCoords, targetCoords);
       if (curToTarget <= maxDistance) {
         addToDistanceList(distanceList, new DistanceEntry(curNode, curToTarget), Integer.MAX_VALUE);
@@ -718,4 +886,26 @@ public class TupleKDTree {
 
   }
 
+  /**
+   * Used for sorting tuple indices based on the values of those tuples for
+   * a specified dimension.
+   */
+  private static class TupleIndexComparator implements IntComparator {
+
+        private final TupleList tupleData;
+        private final int dim;
+        
+        private TupleIndexComparator(TupleList tupleData, int dim) {
+            this.tupleData = tupleData;
+            this.dim = dim;
+        }
+        
+        @Override
+        public int compare(int n1, int n2) {
+            double v1 = tupleData.getTupleValue(n1, dim);
+            double v2 = tupleData.getTupleValue(n2, dim);
+            return v1 < v2 ? -1 : v1 > v2 ? +1 : 0;
+        }
+  }
+  
 }
