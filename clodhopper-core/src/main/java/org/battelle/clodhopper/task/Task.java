@@ -1,6 +1,6 @@
 package org.battelle.clodhopper.task;
 
-import java.util.concurrent.Future;
+import java.util.concurrent.RunnableFuture;
 
 /*=====================================================================
  * 
@@ -45,9 +45,10 @@ import java.util.concurrent.Future;
  * <p>Company: Battelle Memorial Institute</p>
  *
  * @author R. Scarberry
+ * @param <V> the result type returned by the <tt>get()</tt> method.
  * @since 1.0
  */
-public interface Task<V> extends Runnable, Future<V>, Cancelable {
+public interface Task<V> extends RunnableFuture<V> {
 
     /**
      * Add a listener to the receiver's list of <code>TaskListener</code>s.  

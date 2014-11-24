@@ -453,13 +453,13 @@ public abstract class AbstractTask<V> implements Task<V> {
             return cancelFlag.get();
         }
         
-        @Override
-        /**
-         * This one is mandated by the Cancelable interface.
-         */
-        public boolean isCanceled() {
-        	return isCancelled();
-        }
+//        @Override
+//        /**
+//         * This one is mandated by the Cancelable interface.
+//         */
+//        public boolean isCancelled() {
+//        	return isCancelled();
+//        }
         
         /**
          * Same as isEnded().

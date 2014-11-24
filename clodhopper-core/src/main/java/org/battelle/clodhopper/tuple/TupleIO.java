@@ -5,6 +5,7 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
 
@@ -57,13 +58,13 @@ public class TupleIO {
 	}
 
 	public static TupleList loadCSV(File file, String nameForTuples, 
-			TupleListFactory factory, Cancelable cancelable) throws IOException, CancellationException {
-		return loadCSV(file, null, ",", 0, 0, nameForTuples, factory, cancelable, null);
+			TupleListFactory factory, Future future) throws IOException, CancellationException {
+		return loadCSV(file, null, ",", 0, 0, nameForTuples, factory, future, null);
 	}
 	
 	public static TupleList loadCSV(File file, String nameForTuples, 
-			TupleListFactory factory, Cancelable cancelable, ProgressHandler ph) throws IOException, CancellationException {
-		return loadCSV(file, null, ",", 0, 0, nameForTuples, factory, cancelable, ph);
+			TupleListFactory factory, Future future, ProgressHandler ph) throws IOException, CancellationException {
+		return loadCSV(file, null, ",", 0, 0, nameForTuples, factory, future, ph);
 	}
 
 	public static TupleList loadCSV(
@@ -108,7 +109,7 @@ public class TupleIO {
 			int columnCount,
 			String nameForTuples,
 			TupleListFactory factory,
-			Cancelable cancelable,
+			Future future,
 			ProgressHandler ph) throws IOException, CancellationException {
 
 		if (charSet == null) {
@@ -117,7 +118,7 @@ public class TupleIO {
 
 		// Parse out information on the data in the file such as the number of rows and
 		// the columns containing numeric data.
-		CSVInfo csvInfo = parseCSVInfo(file, charSet, startColumn, delimiter, cancelable);	
+		CSVInfo csvInfo = parseCSVInfo(file, charSet, startColumn, delimiter, future);	
 		
 		// When a bit is set, each row has numeric data for that column.
 		BitSet colBits = csvInfo.getColumnBits();
@@ -162,7 +163,7 @@ public class TupleIO {
 			
 			while((line = br.readLine()) != null) {
 
-				if (cancelable != null && cancelable.isCanceled()) {
+				if (future != null && future.isCancelled()) {
 					throw new CancellationException();
 				}
 
@@ -258,7 +259,7 @@ public class TupleIO {
 	 * @throws CancellationException
 	 */
 	private static CSVInfo parseCSVInfo(File file, String charSet, 
-			int startColumn, String delimiter, Cancelable cancelable) 
+			int startColumn, String delimiter, Future future) 
 					throws IOException, CancellationException {
 		
 		int startRow = -1;
@@ -279,7 +280,7 @@ public class TupleIO {
 		
 			while((line = br.readLine()) != null) {
 				
-				if (cancelable != null && cancelable.isCanceled()) {
+				if (future != null && future.isCancelled()) {
 					throw new CancellationException();
 				}
 
