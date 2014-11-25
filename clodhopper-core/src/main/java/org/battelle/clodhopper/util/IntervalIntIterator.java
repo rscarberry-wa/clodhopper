@@ -38,7 +38,9 @@ package org.battelle.clodhopper.util;
  */
 public class IntervalIntIterator implements IntIterator {
 
-    private int lower, upper, cursor;
+    private final int lower;
+    private final int upper;
+    private int cursor;
     
     /**
      * Constructor which takes the upper and lower bounds,
@@ -53,44 +55,54 @@ public class IntervalIntIterator implements IntIterator {
         this.cursor = this.lower;
     }
 
+    @Override
     public int getFirst() {
         gotoFirst();
         return getNext();
     }
 
+    @Override
     public int getLast() {
         gotoLast();
         return getPrev();
     }
 
+    @Override
     public int getNext() {
         return this.cursor++;
     }
 
+    @Override
     public int getPrev() {
         return --this.cursor;
     }
 
+    @Override
     public void gotoFirst() {
         this.cursor = this.lower;
     }
 
+    @Override
     public void gotoLast() {
         this.cursor = this.upper;
     }
 
+    @Override
     public boolean hasNext() {
         return this.cursor >= this.lower && this.cursor < this.upper;
     }
 
+    @Override
     public boolean hasPrev() {
         return this.cursor > this.lower && this.cursor <= this.upper;
     }
 
+    @Override
     public int getSize() {
         return this.upper - this.lower;
     }
 
+    @Override
     public int[] toArray() {
         int sz = getSize();
         int[] rtn = new int[sz];
@@ -100,6 +112,7 @@ public class IntervalIntIterator implements IntIterator {
         return rtn;
     }
 
+    @Override
     public IntIterator clone() {
         IntIterator clone = null;
         try {

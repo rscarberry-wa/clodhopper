@@ -28,23 +28,22 @@ package org.battelle.clodhopper.distance;
  * ChebyshevDistanceMetric.java
  *
  *===================================================================*/
-
 /**
- * The Chebyshev distance between two tuples is the maximum difference along
- * any dimension.  The Chebyshev distance is also called the Maximum Metric, or
- * the L-infinity metric.
- * 
+ * The Chebyshev distance between two tuples is the maximum difference along any
+ * dimension. The Chebyshev distance is also called the Maximum Metric, or the
+ * L-infinity metric.
+ *
  * @author R. Scarberry
  * @since 1.0.1
  *
  */
 public class ChebyshevDistanceMetric implements DistanceMetric {
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public double distance(double[] tuple1, double[] tuple2) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public double distance(final double[] tuple1, final double[] tuple2) {
         double dist = 0.0;
         final int len = tuple1.length;
         for (int i = 0; i < len; i++) {
@@ -52,21 +51,21 @@ public class ChebyshevDistanceMetric implements DistanceMetric {
             double c2 = tuple2[i];
             double diff = Math.abs(c1 - c2);
             if (diff > dist) {
-            	dist = diff;
+                dist = diff;
             }
         }
         return dist;
-	}
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	public DistanceMetric clone() {
-		try {
-			return (DistanceMetric) super.clone();
-		} catch (CloneNotSupportedException e) {
-			throw new InternalError();
-		}
-	}
+    /**
+     * {@inheritDoc}
+     */
+    public DistanceMetric clone() {
+        try {
+            return (DistanceMetric) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new InternalError();
+        }
+    }
 
 }

@@ -28,26 +28,27 @@ package org.battelle.clodhopper.distance;
  * CanberraDistanceMetric.java
  *
  *===================================================================*/
-
 /**
- * <p>The Canberra distance is the sum of of the fractional differences between 
- * each pair of coordinate elements. Each fractional difference has value between 0 and 1. 
- * If one of the coordinate elements is zero, the term is 1.0 regardless of the corresponding
- * element from the other coordinate. If both coordinate elements are 0, the
- * fractional difference is regarded as 0. The Canberra distance is very sensitive to small changes 
- * when both coordinates are near zero.</p> 
- * 
+ * <p>
+ * The Canberra distance is the sum of of the fractional differences between
+ * each pair of coordinate elements. Each fractional difference has value
+ * between 0 and 1. If one of the coordinate elements is zero, the term is 1.0
+ * regardless of the corresponding element from the other coordinate. If both
+ * coordinate elements are 0, the fractional difference is regarded as 0. The
+ * Canberra distance is very sensitive to small changes when both coordinates
+ * are near zero.</p>
+ *
  * @author R.Scarberry
  * @since 1.0.1
  *
  */
 public class CanberraDistanceMetric implements DistanceMetric {
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public double distance(double[] tuple1, double[] tuple2) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public double distance(final double[] tuple1, final double[] tuple2) {
         double dist = 0.0;
         final int len = tuple1.length;
         for (int i = 0; i < len; i++) {
@@ -59,17 +60,17 @@ public class CanberraDistanceMetric implements DistanceMetric {
             }
         }
         return dist;
-	}
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	public DistanceMetric clone() {
-		try {
-			return (DistanceMetric) super.clone();
-		} catch (CloneNotSupportedException e) {
-			throw new InternalError();
-		}
-	}
+    /**
+     * {@inheritDoc}
+     */
+    public DistanceMetric clone() {
+        try {
+            return (DistanceMetric) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new InternalError();
+        }
+    }
 
 }

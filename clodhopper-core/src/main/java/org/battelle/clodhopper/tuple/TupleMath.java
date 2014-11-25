@@ -2,10 +2,12 @@ package org.battelle.clodhopper.tuple;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Random;
 
 import org.battelle.clodhopper.util.IntComparator;
 import org.battelle.clodhopper.util.IntIterator;
+import org.battelle.clodhopper.util.IntervalIntIterator;
 import org.battelle.clodhopper.util.Sorting;
 
 /*=====================================================================
@@ -98,6 +100,61 @@ public final class TupleMath {
         }
 
         return result;
+    }
+    
+    /**
+     * Computes a <code>HyperRect</code> that forms the minimum-sized bounding box for
+     * the data in the supplied <code>TupleList</code>.
+     * 
+     * @param tuples
+     * 
+     * @return an instance of <code>HyperRect</code>. 
+     */
+    public static HyperRect boundingBox(final TupleList tuples) {
+        return boundingBox(tuples, new IntervalIntIterator(0, tuples.getTupleCount()));
+    }
+    
+    /**
+     * Computes a <code>HyperRect</code> that forms the minimum-sized bounding box for
+     * the data in the supplied <code>TupleList</code> contained in the tuples with the
+     * ids in the specified iterator.
+     * 
+     * @param tuples an instance of <code>TupleList</code>
+     * @param ids contains the tuple ids of concern.
+     * 
+     * @return an instance of <code>HyperRect</code>. 
+     */
+    public static HyperRect boundingBox(final TupleList tuples, final IntIterator ids) {
+        
+        Objects.requireNonNull(tuples);
+        Objects.requireNonNull(ids);
+        
+        final int tupleLen = tuples.getTupleLength();
+        final double[] minCorner = new double[tupleLen];
+        final double[] maxCorner = new double[tupleLen];
+        final double[] buffer = new double[tupleLen];
+        
+        Arrays.fill(minCorner, Double.NaN);
+        Arrays.fill(maxCorner, Double.NaN);
+        
+        ids.gotoFirst();
+        while(ids.hasNext()) {
+            int id = ids.getNext();
+            tuples.getTuple(id, buffer);
+            for (int i=0; i<tupleLen; i++) {
+                double d = buffer[i];
+                if (!Double.isNaN(d)) {
+                    if (Double.isNaN(minCorner[i]) || d < minCorner[i]) {
+                        minCorner[i] = d;
+                    }
+                    if (Double.isNaN(maxCorner[i]) || d > maxCorner[i]) {
+                        maxCorner[i] = d;
+                    }
+                }
+            }
+        }
+        
+        return new HyperRect(minCorner, maxCorner);
     }
 
     public static double[] average(TupleList tuples, IntIterator ids) {
