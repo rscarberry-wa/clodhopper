@@ -43,8 +43,9 @@ public interface ClusterSplitter {
     /**
      * Returns true if the specified cluster can be split using this splitter.
      *
-     * @param cluster
-     * @return
+     * @param cluster the cluster to be tested.
+     * 
+     * @return true if the cluster can be split.
      */
     boolean canSplit(Cluster cluster);
 
@@ -52,17 +53,19 @@ public interface ClusterSplitter {
      * Returns true if this splitter prefers the clusters resulting from the
      * split to the original cluster.
      *
-     * @param origCluster
-     * @param splitClusters
-     * @return
+     * @param origCluster the cluster that was split.
+     * @param splitClusters the clusters resulting from the split.
+     * 
+     * @return true if replacing the original cluster with the split clusters is preferred.
      */
     boolean prefersSplit(Cluster origCluster, List<Cluster> splitClusters);
 
     /**
      * Split the specified cluster, returning the split clusters in a list.
      *
-     * @param cluster
-     * @return
+     * @param cluster the cluster to be split.
+     * 
+     * @return a list of clusters resulting from the split.
      */
     List<Cluster> split(Cluster cluster);
 

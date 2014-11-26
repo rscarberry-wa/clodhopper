@@ -1,6 +1,7 @@
 package org.battelle.clodhopper;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import org.battelle.clodhopper.util.ArrayIntIterator;
@@ -44,7 +45,7 @@ import org.battelle.clodhopper.util.IntIterator;
  * immutable.</p>
  *
  * @author R. Scarberry
- * @see org.battelle.clodhopper.tuples.TupleList
+ * @see org.battelle.clodhopper.tuple.TupleList
  * @since 1.0
  *
  */
@@ -83,8 +84,9 @@ public class Cluster {
     /**
      * Get an element of the cluster center.
      *
-     * @param n
-     * @return
+     * @param n 0-based index of the center element.
+     * 
+     * @return value of the center element.
      */
     public double getCenterElement(int n) {
         return center[n];
@@ -103,7 +105,7 @@ public class Cluster {
     /**
      * Get the number of cluster members.
      *
-     * @return
+     * @return the number of members in the cluster.
      */
     public int getMemberCount() {
         return ids.length;
@@ -123,7 +125,7 @@ public class Cluster {
     /**
      * Get an iterator over all the members.
      *
-     * @return
+     * @return an iterator over the cluster members.
      */
     public IntIterator getMembers() {
         return new ArrayIntIterator(ids);

@@ -42,10 +42,10 @@ public interface DistanceMetric extends Cloneable {
      * Computes the distance between tuple data contained in two arrays of the
      * same length.
      *
-     * @param tuple1
-     * @param tuple2
+     * @param tuple1 array containing data for the first tuple.
+     * @param tuple2 array containing data for the second tuple.
      *
-     * @return
+     * @return the distance between the tuples.
      */
     double distance(double[] tuple1, double[] tuple2);
 

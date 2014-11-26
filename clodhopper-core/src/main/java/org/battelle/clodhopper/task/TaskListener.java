@@ -40,41 +40,41 @@ public interface TaskListener {
 	
     /**
      * Sent to listeners when a <code>Task</code> has begun execution.
-     * @param e
+     * @param e the event to post.
      */
-    public void taskBegun(TaskEvent e);
+    void taskBegun(TaskEvent e);
 
     /**
      * Message events sent to listeners as a <code>Task</code> executes.
-     * @param e
+     * @param e the event to post.
      */
-    public void taskMessage(TaskEvent e);
+    void taskMessage(TaskEvent e);
 
     /**
      * Events sent to listeners by executing <code>Task</code>s to 
      * indicate progress.
-     * @param e
+     * @param e the event to post.
      */
-    public void taskProgress(TaskEvent e);
+    void taskProgress(TaskEvent e);
     
     /**
      * Events sent to listeners by executing <code>Task</code>s to 
      * indicate that it has been paused.
-     * @param e
+     * @param e the event to post.
      */
-    public void taskPaused(TaskEvent e);
+    void taskPaused(TaskEvent e);
     
     /**
      * Events sent to listeners by executing <code>Task</code>s to 
      * indicate that a paused task has resumed.
-     * @param e
+     * @param e the event to post.
      */
-    public void taskResumed(TaskEvent e);
+    void taskResumed(TaskEvent e);
 
     /**
      * Final event sent to listeners when a <code>Task</code> finishes execution.
-     * @param e
+     * @param e the event to post.
      */
-    public void taskEnded(TaskEvent e);
+    void taskEnded(TaskEvent e);
 
 }

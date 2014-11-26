@@ -28,22 +28,21 @@ package org.battelle.clodhopper.tuple;
  * Tupleable.java
  *
  *===================================================================*/
-
 /**
- * Defines entities that provide a fixed-length tuple signature.  Such a signature
- * is simply a representation as an array of doubles.
- * 
+ * Defines entities that provide a fixed-length tuple signature. Such a
+ * signature is simply a representation as an array of doubles.
+ *
  * @author R.Scarberry
  * @since 1.0
  *
  */
 public interface Tupleable {
 
-	/**
-	 * Get the tuple signature for the object.
-	 * 
-	 * @return
-	 */
-	double[] getTupleSignature();
-	
+    /**
+     * Get the tuple signature for the object.
+     *
+     * @return the tuple signature for the receiver.
+     */
+    double[] getTupleSignature();
+
 }

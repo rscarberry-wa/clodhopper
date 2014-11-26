@@ -32,7 +32,7 @@ package org.battelle.clodhopper.task;
 /**
  * Simple enumeration used to indicate the outcome of a
  * <code>Task</code>.  The values are interpreted as follows:
- * <p>
+ * 
  * <ul>
  * <li>NOT_FINISHED - the <code>Task</code> has not begun or has not finished.
  * <li>CANCELLED    - the <code>Task</code> was cancelled before it finished.

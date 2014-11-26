@@ -46,7 +46,7 @@ public abstract class AbstractClusterSplitter implements ClusterSplitter {
      * the split the results are only returned if the <code>prefersSplit</code> method returns
      * also returns true. Otherwise, a singleton list containing the original cluster is returned.
      * 
-     * @param cluster
+     * @param cluster the cluster to be split, if a split is actually performed.
      * 
      * @return a list either containing the clusters resulting from the split or a singleton
      *   list containing the starting cluster.

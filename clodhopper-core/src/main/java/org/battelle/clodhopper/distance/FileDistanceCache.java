@@ -98,7 +98,7 @@ public class FileDistanceCache implements DistanceCache {
      *
      * @param f a file containing the distances.
      *
-     * @throws IOException
+     * @throws IOException if an IO error occurs.
      */
     public FileDistanceCache(final File f) throws IOException {
 
@@ -137,7 +137,7 @@ public class FileDistanceCache implements DistanceCache {
     /**
      * Is the backing file open?
      *
-     * @return
+     * @return true if open, false otherwise.
      */
     public synchronized boolean isOpen() {
         return raFile != null;
@@ -152,7 +152,7 @@ public class FileDistanceCache implements DistanceCache {
     /**
      * Closes the file backing the cache.
      *
-     * @throws IOException
+     * @throws IOException if an IO error occurs.
      */
     public synchronized void closeFile() throws IOException {
         if (raFile != null) {

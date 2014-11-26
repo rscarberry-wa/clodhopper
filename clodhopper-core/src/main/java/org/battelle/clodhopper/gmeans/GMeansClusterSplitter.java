@@ -45,65 +45,70 @@ import org.battelle.clodhopper.tuple.TupleMath;
  * GMeansClusterSplitter.java
  *
  *===================================================================*/
-
 /**
  * The cluster splitter variant used by g-means clustering.
- * 
+ *
  * @author R. Scarberry
  * @since 1.0
  *
  */
 public class GMeansClusterSplitter extends AbstractClusterSplitter {
 
-	private static final Logger logger = Logger.getLogger(GMeansClusterSplitter.class);
-	
-	private TupleList tuples;
-	private GMeansParams params;
-	
-	/**
-	 * Constructor
-	 * 
-	 * @param tuples container for the data being clustered.
-	 * @param params the g-means clustering parameters.
-	 * 
-	 * @throws NullPointerException if either of the parameters is null.
-	 */
-	public GMeansClusterSplitter(TupleList tuples, GMeansParams params) {
-		if (tuples == null || params == null) {
-			throw new NullPointerException();
-		}
-		this.tuples = tuples;
-		this.params = params;
-	}
-	
-	@Override
-	/**
-	 * Uses and Anderson-Darling gaussian test to determine whether or not to prefer the
-	 * split over the original cluster.
-	 * 
-	 * @param origCluster the cluster that was split.
-	 * @param splitClusters the clusters resulting from the split.
-	 */
-	public boolean prefersSplit(Cluster origCluster, List<Cluster> splitClusters) {
-		return !TupleMath.andersonDarlingGaussianTest(projectToLineBetweenChildren(
-				origCluster, splitClusters));
-	}
+    private static final Logger logger = Logger.getLogger(GMeansClusterSplitter.class);
 
-	@Override
-	/**
-	 * {@inheritDoc}
-	 */
-	public List<Cluster> performSplit(Cluster cluster) {
-		TupleList seeds = createTwoSeeds(cluster);
-		return runLocalKMeans(cluster, seeds);
-	}
+    private TupleList tuples;
+    private GMeansParams params;
 
-	/**
+    /**
+     * Constructor
+     *
+     * @param tuples container for the data being clustered.
+     * @param params the g-means clustering parameters.
+     *
+     * @throws NullPointerException if either of the parameters is null.
+     */
+    public GMeansClusterSplitter(TupleList tuples, GMeansParams params) {
+        if (tuples == null || params == null) {
+            throw new NullPointerException();
+        }
+        this.tuples = tuples;
+        this.params = params;
+    }
+
+    @Override
+    /**
+     * Uses and Anderson-Darling gaussian test to determine whether or not to
+     * prefer the split over the original cluster.
+     *
+     * @param origCluster the cluster that was split.
+     * @param splitClusters the clusters resulting from the split.
+     */
+    public boolean prefersSplit(Cluster origCluster, List<Cluster> splitClusters) {
+        return !TupleMath.andersonDarlingGaussianTest(projectToLineBetweenChildren(
+                origCluster, splitClusters));
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public List<Cluster> performSplit(Cluster cluster) {
+        TupleList seeds = createTwoSeeds(cluster);
+        return runLocalKMeans(cluster, seeds);
+    }
+
+    /**
      * Projects the data in a cluster to the line connecting its two children's
      * centers.
+     * 
+     * @param cluster the parent cluster.
+     * @param children the children of the cluster
+     * 
+     * @return an array containing 2 points defining a line.
      */
-    private double[] projectToLineBetweenChildren(Cluster cluster,
-            Collection<Cluster> children) {
+    private double[] projectToLineBetweenChildren(final Cluster cluster,
+        final Collection<Cluster> children) {
+        
         double[] projectedData = null;
         if (children.size() == 2) {
             Iterator<Cluster> it = children.iterator();
@@ -118,12 +123,17 @@ public class GMeansClusterSplitter extends AbstractClusterSplitter {
         }
         return projectedData;
     }
-    
+
     /**
      * Projects all data in a cluster to one dimension, via the dot product with
      * a projection vector.
+     * 
+     * @param cluster the cluster of concern.
+     * @param projection the projection vector.
+     * 
+     * @return the one-dimensional projection.
      */
-    private double[] projectToVector(Cluster cluster, double[] projection) {
+    private double[] projectToVector(final Cluster cluster, final double[] projection) {
         int n = cluster.getMemberCount();
         int dim = tuples.getTupleLength();
         double[] projectedData = new double[n];
@@ -139,11 +149,13 @@ public class GMeansClusterSplitter extends AbstractClusterSplitter {
      * Create two cluster seeds by going +/- one standard deviation from the
      * cluster's center.
      * 
+     * @param cluster the cluster of concern.
+     *
      * @return TupleList containing two seeds
      */
-    private TupleList createTwoSeeds(Cluster cluster) {
-        
-    	int dim = tuples.getTupleLength();
+    private TupleList createTwoSeeds(final Cluster cluster) {
+
+        int dim = tuples.getTupleLength();
 
         double[][] stats = ClusterStats.computeMeanAndVariance(tuples, cluster);
 
@@ -151,14 +163,14 @@ public class GMeansClusterSplitter extends AbstractClusterSplitter {
 
         double[] seed1 = new double[dim];
         double[] seed2 = new double[dim];
-        
+
         for (int i = 0; i < dim; i++) {
             double center = stats[i][0];
             double sdev = Math.sqrt(stats[i][1]);
             seed1[i] = center - sdev;
             seed2[i] = center + sdev;
         }
-        
+
         seeds.setTuple(0, seed1);
         seeds.setTuple(1, seed2);
 
@@ -167,44 +179,45 @@ public class GMeansClusterSplitter extends AbstractClusterSplitter {
 
     /**
      * Runs k-means to split a cluster.
+     *
+     * @param cluster the cluster to split.
+     * @param seeds the initial seeds for performing k-means to split the cluster.
      * 
-     * @param cluster
-     * @param seeds
-     * @return
+     * @return a list of the resulting clusters.
      */
-    protected List<Cluster> runLocalKMeans(Cluster cluster, TupleList seeds) {
+    protected List<Cluster> runLocalKMeans(final Cluster cluster, final TupleList seeds) {
 
         FilteredTupleList fcs = new FilteredTupleList(cluster.getMembers().toArray(), tuples);
-        
+
         KMeansParams kparams = new KMeansParams.Builder()
-        	.clusterCount(seeds.getTupleCount())
-        	.maxIterations(Integer.MAX_VALUE)
-        	.movesGoal(0)
-        	.workerThreadCount(1)
-        	.replaceEmptyClusters(false)
-        	.distanceMetric(params.getDistanceMetric())
-        	.clusterSeeder(new PreassignedSeeder(seeds)).
-        	build();
-        
+                .clusterCount(seeds.getTupleCount())
+                .maxIterations(Integer.MAX_VALUE)
+                .movesGoal(0)
+                .workerThreadCount(1)
+                .replaceEmptyClusters(false)
+                .distanceMetric(params.getDistanceMetric())
+                .clusterSeeder(new PreassignedSeeder(seeds)).
+                build();
+
         KMeansClusterer kmeans = new KMeansClusterer(fcs, kparams);
         kmeans.run();
-        
+
         List<Cluster> clusters;
-		try {
-			clusters = kmeans.get();
-		} catch (Exception e) {
-			logger.error("error splitting cluster", e);
-			return null;
-		}
-        
+        try {
+            clusters = kmeans.get();
+        } catch (Exception e) {
+            logger.error("error splitting cluster", e);
+            return null;
+        }
+
         int n = clusters.size();
         List<Cluster> clusterList = new ArrayList<Cluster>(n);
         for (int i = 0; i < n; i++) {
             Cluster c = clusters.get(i);
             int memCount = c.getMemberCount();
             int[] indexes = new int[memCount];
-            for (int j=0; j<memCount; j++) {
-            	indexes[j] = fcs.getFilteredIndex(c.getMember(j));
+            for (int j = 0; j < memCount; j++) {
+                indexes[j] = fcs.getFilteredIndex(c.getMember(j));
             }
             clusterList.add(new Cluster(indexes, c.getCenter()));
         }

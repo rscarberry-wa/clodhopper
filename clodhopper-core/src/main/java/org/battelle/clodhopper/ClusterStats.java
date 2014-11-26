@@ -66,7 +66,8 @@ public final class ClusterStats {
      * length of the tuples. For a given index n in [0 - (tupleLen-1)], element
      * 0 is the mean, element 1 is the variance.
      */
-    public static double[][] computeMeanAndVariance(TupleList tuples, Cluster cluster) {
+    public static double[][] computeMeanAndVariance(final TupleList tuples, final Cluster cluster) {
+        
         int tupleLen = tuples.getTupleLength();
         if (tupleLen != cluster.getCenterLength()) {
             throw new IllegalArgumentException(String.format(
@@ -99,15 +100,15 @@ public final class ClusterStats {
     }
 
     /**
-     * Computes the Bayes Information Criterion (BIC) for a <tt>ClusterList</tt>
+     * Computes the Bayes Information Criterion (BIC) for a list of clusters.
      * object.
      *
-     * @param tuples
-     * @param clusters
+     * @param tuples the <code>TupleList</code> used to generate the clusters.
+     * @param clusters a list containing the <code>Cluster</code>s.
      *
-     * @return
+     * @return the Bayes Information Criterion.
      */
-    public static double computeBIC(TupleList tuples, List<Cluster> clusters) {
+    public static double computeBIC(final TupleList tuples, final List<Cluster> clusters) {
 
         double bic = 0.0;
 
@@ -175,33 +176,33 @@ public final class ClusterStats {
      * Computes the Bayes Information Criterion (BIC) for a single
      * <tt>Cluster</tt> object.
      *
-     * @param cs
-     * @param clusters
+     * @param tuples the <code>TupleList</code> from which the cluster was generated.
+     * @param cluster the <code>Cluster</code> being evaluated.
      *
-     * @return
+     * @return the Bayes Information Criterion.
      */
-    public static double computeBIC(TupleList cs, Cluster cluster) {
-        return computeBIC(cs, new Cluster[]{cluster});
+    public static double computeBIC(final TupleList tuples, final Cluster cluster) {
+        return computeBIC(tuples, new Cluster[]{cluster});
     }
 
     /**
      * Computes the Bayes Information Criterion for an array of <tt>Cluster</tt>
      * instances.
      *
-     * @param cs contains the coordinate data for the clusters.
+     * @param tuples contains the tuple data for the clusters.
      * @param clusters an array of <tt>Cluster</tt> instances
      *
-     * @return
+     * @return the Bayes Information Criterion.
      */
-    public static double computeBIC(TupleList tuples, Cluster[] clusters) {
+    public static double computeBIC(final TupleList tuples, final Cluster[] clusters) {
         return computeBIC(tuples, Arrays.asList(clusters));
     }
 
-    private static double computeDistortion(TupleList tuples, Cluster cluster) {
+    private static double computeDistortion(final TupleList tuples, final Cluster cluster) {
         return cluster.getMemberCount() * TupleMath.norm1(computeVariance(tuples, cluster));
     }
 
-    private static double[] computeVariance(TupleList tuples, Cluster cluster) {
+    private static double[] computeVariance(final TupleList tuples, final Cluster cluster) {
 
         int n = cluster.getMemberCount();
         double[] center = cluster.getCenter();

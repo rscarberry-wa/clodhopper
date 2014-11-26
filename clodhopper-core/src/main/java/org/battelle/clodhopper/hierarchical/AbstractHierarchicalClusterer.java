@@ -34,72 +34,71 @@ import org.battelle.clodhopper.tuple.TupleList;
  * AbstractHierarchicalClusterer.java
  *
  *===================================================================*/
-
 /**
- * <p>Abstract base class for implementations of hierarchical clustering.
- * Subclasses must implement the <tt>buildDendrogram</tt> method.  Subclasses cannot
- * implement the <tt>doTask()</tt> method since it is final.  The
- * difference between different hierarchical clustering algorithms is their methods
- * for generating the dendrogram.</p>
- * 
+ * <p>
+ * Abstract base class for implementations of hierarchical clustering.
+ * Subclasses must implement the <tt>buildDendrogram</tt> method. Subclasses
+ * cannot implement the <tt>doTask()</tt> method since it is final. The
+ * difference between different hierarchical clustering algorithms is their
+ * methods for generating the dendrogram.</p>
+ *
  * @author R. Scarberry
- * @since 1.0 
+ * @since 1.0
  *
  */
 public abstract class AbstractHierarchicalClusterer extends AbstractClusterer {
 
-	protected TupleList tuples;
-	protected HierarchicalParams params;	
-	
+    protected TupleList tuples;
+    protected HierarchicalParams params;
+
     // The dendrogram produced by the clustering implementation.
     protected Dendrogram dendrogram;
     protected List<Cluster> clusters;
-    
+
     /**
      * Constructor.
-     * 
+     *
      * @param cs - contains the coordinates to be clustered.
      * @param params - the hierarchical clustering parameters.
-     * @param dendrogram - if non-null, a dendrogram to be reused.  
-     *   This dendrogram should have been produced by an earlier run
-     *   of the algorithm on the same coordinate list.  If null, it is 
-     *   ignored.
+     * @param dendrogram - if non-null, a dendrogram to be reused. This
+     * dendrogram should have been produced by an earlier run of the algorithm
+     * on the same coordinate list. If null, it is ignored.
      */
     public AbstractHierarchicalClusterer(TupleList cs,
             HierarchicalParams params, Dendrogram dendrogram) {
         if (cs == null || params == null) {
-        	throw new NullPointerException();
+            throw new NullPointerException();
         }
         this.tuples = cs;
-    	this.params = params;
-    	this.dendrogram = dendrogram;
+        this.params = params;
+        this.dendrogram = dendrogram;
     }
 
     /**
-     * Constructor for completely reclustering a
-     * list of coordinates.
-     * 
+     * Constructor for completely reclustering a list of coordinates.
+     *
      * @param cs - contains the coordinates to be clustered.
      * @param params - the hierarchical clustering parameters.
      */
-    public AbstractHierarchicalClusterer(TupleList cs, HierarchicalParams params) {
+    public AbstractHierarchicalClusterer(final TupleList cs, final HierarchicalParams params) {
         this(cs, params, null);
     }
 
     /**
      * Returns the dendrogram produced by the task, or the dendrogram reused by
-     * the task if the dendrogram was provided by the constructor.
-     * If creating a new dendrogram, this method should not be
-     * called until the task is finished.
-     * @return
+     * the task if the dendrogram was provided by the constructor. If creating a
+     * new dendrogram, this method should not be called until the task is
+     * finished.
+     *
+     * @return the <code>Dendrogram</code> instance.
      */
     public Dendrogram getDendrogram() {
         return dendrogram;
     }
 
     /**
-     * Perform the work of this task.  Since this method is final,
-     * subclasses must perform their work in <tt>buildDendrogram()</tt>.
+     * Perform the work of this task. Since this method is final, subclasses
+     * must perform their work in <tt>buildDendrogram()</tt>.
      */
     protected final List<Cluster> doTask() throws Exception {
 
@@ -128,27 +127,27 @@ public abstract class AbstractHierarchicalClusterer extends AbstractClusterer {
         int clusterCount = 0;
 
         HierarchicalParams.Criterion criterion = params.getCriterion();
-        
+
         if (criterion == HierarchicalParams.Criterion.CLUSTERS) {
-            
-        	clusterCount = params.getClusterCount();
+
+            clusterCount = params.getClusterCount();
             if (clusterCount > tupleCount) {
                 postMessage("reducing number of clusters to the number of tuples: "
                         + tupleCount);
                 clusterCount = tupleCount;
             }
-            
+
         } else if (criterion == HierarchicalParams.Criterion.COHERENCE) {
-        	
-        	dendrogram.setMinCoherenceThreshold(params.getMinCoherenceThreshold());
-        	dendrogram.setMaxCoherenceThreshold(params.getMaxCoherenceThreshold());
-            
-        	clusterCount = dendrogram.clustersWithCoherenceExceeding(params.getCoherenceDesired());
-        	
+
+            dendrogram.setMinCoherenceThreshold(params.getMinCoherenceThreshold());
+            dendrogram.setMaxCoherenceThreshold(params.getMaxCoherenceThreshold());
+
+            clusterCount = dendrogram.clustersWithCoherenceExceeding(params.getCoherenceDesired());
+
         } else {
-            
-        	finishWithError("unsupported criterion: " + criterion);
-        	
+
+            finishWithError("unsupported criterion: " + criterion);
+
         }
 
         clusters = dendrogram.generateClusters(clusterCount, tuples);
@@ -157,9 +156,10 @@ public abstract class AbstractHierarchicalClusterer extends AbstractClusterer {
     }
 
     /**
-     * Build a new dendrogram.  Subclasses must implement this method.
-     * @throws Exception if anything goes wrong.  The exception bubbles up
-     *   to the run method of <tt>AbstractTask</tt> and sets the error message.
+     * Build a new dendrogram. Subclasses must implement this method.
+     *
+     * @throws Exception if anything goes wrong. The exception bubbles up to the
+     * run method of <tt>AbstractTask</tt> and sets the error message.
      */
     protected abstract void buildDendrogram() throws Exception;
 }

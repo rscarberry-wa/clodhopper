@@ -37,8 +37,8 @@ package org.battelle.clodhopper.tuple;
  */
 public class HyperRect {
 
-  private double[] minCorner;
-  private double[] maxCorner;
+  private final double[] minCorner;
+  private final double[] maxCorner;
 
   /**
    * Constructs a hyper-rectangle with zero volume in
@@ -46,7 +46,7 @@ public class HyperRect {
    * 
    * @param dim - the dimensionality of the hyper-rectangle.
    */
-  public HyperRect(int dim) {
+  public HyperRect(final int dim) {
       if (dim <= 0) {
         throw new IllegalArgumentException("dimension must be > 0");
       }
@@ -62,13 +62,13 @@ public class HyperRect {
    * ensure that each element of minCorner is less than or equal to the
    * corresponding element of maxCorner.</p> 
    * 
-   * @param cornerMin
-   * @param cornerMax
+   * @param cornerMin contains the minimum values for all dimensions.
+   * @param cornerMax contains the maximum values for all dimensions.
    * 
    * @throws IllegalArgumentException - if minCorner and maxCorner do not
    *   have the same length.
    */
-  public HyperRect(double[] cornerMin, double[] cornerMax) {
+  public HyperRect(final double[] cornerMin, final double[] cornerMax) {
       int dim = cornerMin.length;
       if (dim != cornerMax.length) {
           throw new IllegalArgumentException("inconsistent dimensions: "
@@ -110,7 +110,7 @@ public class HyperRect {
    * Returns the index of the dimension having the smallest difference
    * between the minimum vertex and maximum vertex point.
    * 
-   * @return
+   * @return the dimension with the minimum difference between in maximum and minimum values.
    */
   public int dimensionOfMinWidth() {
       int dim = minCorner.length;
@@ -132,7 +132,7 @@ public class HyperRect {
    * Returns the index of the dimension having the largest difference
    * between the minimum vertex and maximum vertex point.
    * 
-   * @return
+   * @return the dimension with the maximum difference between in maximum and minimum values.
    */
   public int dimensionOfMaxWidth() {
       int dim = minCorner.length;
@@ -159,7 +159,7 @@ public class HyperRect {
    * @throws IllegalArgumentException - if the value is greater than
    *   the corresponding maximum vertex element.
    */
-  public void setMinCornerCoord(int n, double value) {
+  public void setMinCornerCoord(final int n, final double value) {
       if (value <= maxCorner[n]) {
           minCorner[n] = value;
       } else {
@@ -171,9 +171,9 @@ public class HyperRect {
   /**
    * Returns the element of the minimum vertex point for the specified dimension.
    * @param n - the index of the dimension.
-   * @return
+   * @return the value of the minimum corner element.
    */
-  public double getMinCornerCoord(int n) {
+  public double getMinCornerCoord(final int n) {
       return minCorner[n];
   }
 
@@ -186,7 +186,7 @@ public class HyperRect {
    * @throws IllegalArgumentException - if the value is less than
    *   the corresponding maximum vertex element.
    */
-  public void setMaxCornerCoord(int n, double value) {
+  public void setMaxCornerCoord(final int n, final double value) {
       if (value >= minCorner[n]) {
           maxCorner[n] = value;
       } else {
@@ -198,9 +198,9 @@ public class HyperRect {
   /**
    * Returns the element of the maximum vertex point for the specified dimension.
    * @param n - the index of the dimension.
-   * @return
+   * @return the value of the maximum corner element.
    */
-  public double getMaxCornerCoord(int n) {
+  public double getMaxCornerCoord(final int n) {
       return maxCorner[n];
   }
 
@@ -213,10 +213,12 @@ public class HyperRect {
    * the hyper-rectangle to the specified point. If the point is
    * within the rectangle, a clone of the point itself is returned.
    * 
-   * @param point
-   * @return
+   * @param point a point value.
+   * 
+   * @return an array the same length as the dimension of this hyperrect containing its
+   *   closest point to the specified point.
    */
-  public double[] closestPoint(double[] point) {
+  public double[] closestPoint(final double[] point) {
       int dim = point.length;
       checkDimension(dim);
       double[] closest = new double[dim];
@@ -237,10 +239,10 @@ public class HyperRect {
    * Returns true if the specified point is contained within or
    * on the surface of the hyper-rectangle.
    * 
-   * @param point
-   * @return
+   * @param point a point value.
+   * @return true if the point is contained in this hyperrect.
    */
-  public boolean contains(double[] point) {
+  public boolean contains(final double[] point) {
       int dim = point.length;
       checkDimension(dim);
       for (int i=0; i<dim; i++) {
@@ -254,7 +256,7 @@ public class HyperRect {
 
   /**
    * Returns the dimensionality of the hyper-rectangle.
-   * @return
+   * @return the dimension of this hyperrect.
    */
   public int getDimension() {
       return minCorner.length;
@@ -265,10 +267,10 @@ public class HyperRect {
    * The elements of the minimum vertex are all set to Double.NEGATIVE_INFINITY
    * and all element of the maximum vertex are set to Double.POSITIVE_INFINITY.
    * 
-   * @param dim
-   * @return
+   * @param dim the dimension of the desired <code>HyperRect</code>.
+   * @return a <code>HyperRect</code> instance with infinite width in each dimension.
    */
-  public static HyperRect infiniteHyperRect(int dim) {
+  public static HyperRect infiniteHyperRect(final int dim) {
       HyperRect hrect = new HyperRect(dim);
       java.util.Arrays.fill(hrect.minCorner, Double.NEGATIVE_INFINITY);
       java.util.Arrays.fill(hrect.maxCorner, Double.POSITIVE_INFINITY);
@@ -278,10 +280,10 @@ public class HyperRect {
   /**
    * Returns the intersection of this hyper-rectangle with another,
    * if the two hyper-rectangles intersect.
-   * @param other 
+   * @param other the other <code>HyperRect</code> instance.
    * @return - the intersection, or null if the hyper-rectangles do not intersect.
    */
-  public HyperRect intersectionWith(HyperRect other) {
+  public HyperRect intersectionWith(final HyperRect other) {
       int dim = other.getDimension();
       checkDimension(dim);
       HyperRect intersection = new HyperRect(dim);
@@ -299,10 +301,10 @@ public class HyperRect {
 
   /**
    * Returns true if this hyper-rectangle intersects with the other.
-   * @param other
-   * @return
+   * @param other the other hyperrect.
+   * @return true if the hyperrects intersect.
    */
-  public boolean intersectsWith(HyperRect other) {
+  public boolean intersectsWith(final HyperRect other) {
       int dim = other.getDimension();
       checkDimension(dim);
       for (int i=0; i<dim; i++) {
@@ -317,7 +319,7 @@ public class HyperRect {
   /**
    * Returns the volume of the hyper-rectangle.  The volume is the product
    * of all the dimension widths.
-   * @return
+   * @return the volume.
    */
   public double volume() {
       double v = 0.0;
@@ -329,7 +331,7 @@ public class HyperRect {
   }
 
   // Check that dim equals the dimension of this hyper-rectangle.
-  private void checkDimension(int dim) {
+  private void checkDimension(final int dim) {
       if (dim != minCorner.length) {
           throw new IllegalArgumentException("wrong number of dimensions: " +
                                              dim + " != " + minCorner.length);

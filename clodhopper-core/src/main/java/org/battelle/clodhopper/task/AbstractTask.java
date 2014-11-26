@@ -508,7 +508,7 @@ public abstract class AbstractTask<V> implements Task<V> {
          * Returns the throwable (error or exception) which aborted execution,
          * if such a condition terminated the run.
          * 
-         * @return
+         * @return a <code>Throwable</code> or null if no error occurred.
          */
         public Throwable getError() {
         	return error;
@@ -524,6 +524,10 @@ public abstract class AbstractTask<V> implements Task<V> {
 
         /**
          * Subclasses define this method to do their work.
+         * 
+         * @return the product of the task.
+         * 
+         * @throws Exception if an error occurs during performance of the task.
          */
         protected abstract V doTask() throws Exception;
 

@@ -47,7 +47,7 @@ public interface Clusterer extends Task<List<Cluster>> {
      * returns null. You should only call this method after the clusterer has
      * finished with a successful outcome.
      *
-     * @return
+     * @return the list of <code>Cluster</code>s generated.
      */
     List<Cluster> getClusters();
 

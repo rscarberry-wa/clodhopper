@@ -108,7 +108,7 @@ public interface Task<V> extends RunnableFuture<V> {
      * Returns null if the task is either not finished or did not finish with
      * an error.
      * 
-     * @return
+     * @return an instance of a <code>Throwable</code> or null, if no error occurred.
      */
     public Throwable getError();
 
@@ -149,7 +149,7 @@ public interface Task<V> extends RunnableFuture<V> {
     
     /**
      * Returns true if the task has been paused, false otherwise.
-     * @return
+     * @return true if paused, false otherwise.
      */
     public boolean isPaused();
     

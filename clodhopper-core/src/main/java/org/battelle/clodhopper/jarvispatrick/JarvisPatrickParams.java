@@ -31,193 +31,192 @@ import org.battelle.clodhopper.distance.EuclideanDistanceMetric;
  * JarvisPatrickParams.java
  *
  *===================================================================*/
-
 /**
  * Parameters object for the Jarvis-Patrick clustering algorithm.
- * 
+ *
  * @author R. Scarberry
  * @since 1.0.1
  *
  */
 public class JarvisPatrickParams {
-  
-  public static final int NEAREST_NEIGHBORS_TO_EXAMINE_DEFAULT = 20;
-  public static final int NEAREST_NEIGHBOR_OVERLAP_DEFAULT = 2;
-  
-  // The number of nearest neighbors to examine for every tuple.
-  private int nearestNeighborsToExamine;
+
+    public static final int NEAREST_NEIGHBORS_TO_EXAMINE_DEFAULT = 20;
+    public static final int NEAREST_NEIGHBOR_OVERLAP_DEFAULT = 2;
+
+    // The number of nearest neighbors to examine for every tuple.
+    private int nearestNeighborsToExamine;
   // The minimum required nn overlap between tuples in order
-  // for them to be assigned to the same cluster.
-  private int nearestNeighborOverlap;
+    // for them to be assigned to the same cluster.
+    private int nearestNeighborOverlap;
   // Whether or not tuples must be in each other's nn list
-  // in order to be assigned to the same cluster.
-  private boolean mutualNearestNeighbors;
-  // The distance metric to use for finding nearest neighbors.
-  private DistanceMetric distanceMetric;
-  // The number of threads to use for the concurrent parts.
-  private int workerThreadCount;
-  
-  /**
-   * Constructor
-   */
-  public JarvisPatrickParams() {
-    nearestNeighborsToExamine = NEAREST_NEIGHBORS_TO_EXAMINE_DEFAULT;
-    nearestNeighborOverlap = NEAREST_NEIGHBOR_OVERLAP_DEFAULT;
-    mutualNearestNeighbors = true;
-    distanceMetric = new EuclideanDistanceMetric();
-    workerThreadCount = Runtime.getRuntime().availableProcessors();
-  }
-  
-  /**
-   * Returns the number of nearest neighbors to examine for each tuple.
-   * 
-   * @return
-   */
-  public int getNearestNeighborsToExamine() {
-    return nearestNeighborsToExamine;
-  }
-  
-  /**
-   * Set the number of nearest neighbors to examine for each tuple.
-   * 
-   * @param nearestNeighborsToExamine
-   */
-  public void setNearestNeighborsToExamine(int nearestNeighborsToExamine) {
-    if (nearestNeighborsToExamine < 2) {
-      throw new IllegalArgumentException("must be >= 2: " + nearestNeighborsToExamine);
-    }
-    this.nearestNeighborsToExamine = nearestNeighborsToExamine;
-  }
-  
-  /**
-   * Get the nearest neighbor overlap that must exist between two tuples in 
-   * order for them to be assigned to the same cluster.
-   * 
-   * @return
-   */
-  public int getNearestNeighborOverlap() {
-    return nearestNeighborOverlap;
-  }
-  
-  /**
-   * Set the nearest neighbor overlap required for two tuples to 
-   * be assigned to the same cluster.
-   * 
-   * @param nearestNeighborOverlap
-   */
-  public void setNearestNeighborOverlap(int nearestNeighborOverlap) {
-    if (nearestNeighborOverlap < 1) {
-      throw new IllegalArgumentException("must be >= 1: " + nearestNeighborOverlap);
-    }
-    this.nearestNeighborOverlap = nearestNeighborOverlap;
-  }
-  
-  /**
-   * Return whether or not two tuples must be in each other's nearest neighbor
-   * lists in order for them to be assigned to the same cluster.
-   * 
-   * @return
-   */
-  public boolean getMutualNearestNeighbors() {
-    return mutualNearestNeighbors;
-  }
-  
-  /**
-   * Set whether or not two tuples must be in each other's nearest neighbor lists
-   * in order for them to be in the same cluster.
-   * 
-   * @param b
-   */
-  public void setMutualNearestNeighbors(boolean b) {
-    mutualNearestNeighbors = b;
-  }
-  
-  /**
-   * Get the distance metric.
-   * 
-   * @return
-   */
-  public DistanceMetric getDistanceMetric() {
-    return distanceMetric;
-  }
-  
-  /**
-   * Set the distance metric.
-   * 
-   * @param distanceMetric
-   */
-  public void setDistanceMetric(DistanceMetric distanceMetric) {
-    if (distanceMetric == null) {
-      throw new NullPointerException();
-    }
-    this.distanceMetric = distanceMetric;
-  }
+    // in order to be assigned to the same cluster.
+    private boolean mutualNearestNeighbors;
+    // The distance metric to use for finding nearest neighbors.
+    private DistanceMetric distanceMetric;
+    // The number of threads to use for the concurrent parts.
+    private int workerThreadCount;
 
-  /**
-   * Get the number of worker threads to use for concurrent parts of
-   * the algorithm.
-   * 
-   * @return
-   */
-  public int getWorkerThreadCount() {
-    return workerThreadCount;
-  }
-  
-  /**
-   * Set the number of threads to be used for concurrent parts of the
-   * algorithm.
-   * 
-   * @param n
-   */
-  public void setWorkerThreadCount(int n) {
-    if (n <= 0) {
-      throw new IllegalArgumentException("worker thread count must be greater than 0");
-    }
-    this.workerThreadCount = n;
-  }
-
-  /**
-   * Builder class for JarvisPatrickParams.
-   * 
-   * @author R. Scarberry
-   *
-   */
-  public static class Builder {
-    
-    private JarvisPatrickParams params;
-  
-    public Builder() {
-      params = new JarvisPatrickParams();
-    }
-    
-    public Builder nearestNeighborsToExamine(int nearestNeighborsToExamine) {
-      params.setNearestNeighborsToExamine(nearestNeighborsToExamine);
-      return this;
-    }
-    
-    public Builder nearestNeighborOverlap(int nearestNeighborOverlap) {
-      params.setNearestNeighborOverlap(nearestNeighborOverlap);
-      return this;
-    }
-    
-    public Builder mutualNearestNeighbors(boolean b) {
-      params.setMutualNearestNeighbors(b);
-      return this;
-    }
-    
-    public Builder workerThreadCount(int n) {
-      params.setWorkerThreadCount(n);
-      return this;
+    /**
+     * Constructor
+     */
+    public JarvisPatrickParams() {
+        nearestNeighborsToExamine = NEAREST_NEIGHBORS_TO_EXAMINE_DEFAULT;
+        nearestNeighborOverlap = NEAREST_NEIGHBOR_OVERLAP_DEFAULT;
+        mutualNearestNeighbors = true;
+        distanceMetric = new EuclideanDistanceMetric();
+        workerThreadCount = Runtime.getRuntime().availableProcessors();
     }
 
-    public Builder distanceMetric(DistanceMetric distanceMetric) {
-      params.setDistanceMetric(distanceMetric);
-      return this;
+    /**
+     * Returns the number of nearest neighbors to examine for each tuple.
+     *
+     * @return the number of nearest neighbors to examine.
+     */
+    public int getNearestNeighborsToExamine() {
+        return nearestNeighborsToExamine;
     }
 
-    public JarvisPatrickParams build() {
-      return params;
+    /**
+     * Set the number of nearest neighbors to examine for each tuple.
+     *
+     * @param nearestNeighborsToExamine the number of nearest neighbors to examine.
+     */
+    public void setNearestNeighborsToExamine(final int nearestNeighborsToExamine) {
+        if (nearestNeighborsToExamine < 2) {
+            throw new IllegalArgumentException("must be >= 2: " + nearestNeighborsToExamine);
+        }
+        this.nearestNeighborsToExamine = nearestNeighborsToExamine;
     }
-  }
- 
+
+    /**
+     * Get the nearest neighbor overlap that must exist between two tuples in
+     * order for them to be assigned to the same cluster.
+     *
+     * @return the nearest neighbor overlap.
+     */
+    public int getNearestNeighborOverlap() {
+        return nearestNeighborOverlap;
+    }
+
+    /**
+     * Set the nearest neighbor overlap required for two tuples to be assigned
+     * to the same cluster.
+     *
+     * @param nearestNeighborOverlap the nearest neighbor overlap.
+     */
+    public void setNearestNeighborOverlap(final int nearestNeighborOverlap) {
+        if (nearestNeighborOverlap < 1) {
+            throw new IllegalArgumentException("must be >= 1: " + nearestNeighborOverlap);
+        }
+        this.nearestNeighborOverlap = nearestNeighborOverlap;
+    }
+
+    /**
+     * Return whether or not two tuples must be in each other's nearest neighbor
+     * lists in order for them to be assigned to the same cluster.
+     *
+     * @return true or false depending upon the setting.
+     */
+    public boolean getMutualNearestNeighbors() {
+        return mutualNearestNeighbors;
+    }
+
+    /**
+     * Set whether or not two tuples must be in each other's nearest neighbor
+     * lists in order for them to be in the same cluster.
+     *
+     * @param b true or false.
+     */
+    public void setMutualNearestNeighbors(final boolean b) {
+        mutualNearestNeighbors = b;
+    }
+
+    /**
+     * Get the distance metric.
+     *
+     * @return an instance of <code>DistanceMetric</code>.
+     */
+    public DistanceMetric getDistanceMetric() {
+        return distanceMetric;
+    }
+
+    /**
+     * Set the distance metric.
+     *
+     * @param distanceMetric the distance metric to use.
+     */
+    public void setDistanceMetric(final DistanceMetric distanceMetric) {
+        if (distanceMetric == null) {
+            throw new NullPointerException();
+        }
+        this.distanceMetric = distanceMetric;
+    }
+
+    /**
+     * Get the number of worker threads to use for concurrent parts of the
+     * algorithm.
+     *
+     * @return the number of worker threads.
+     */
+    public int getWorkerThreadCount() {
+        return workerThreadCount;
+    }
+
+    /**
+     * Set the number of threads to be used for concurrent parts of the
+     * algorithm.
+     *
+     * @param n the number of worker threads.
+     */
+    public void setWorkerThreadCount(final int n) {
+        if (n <= 0) {
+            throw new IllegalArgumentException("worker thread count must be greater than 0");
+        }
+        this.workerThreadCount = n;
+    }
+
+    /**
+     * Builder class for JarvisPatrickParams.
+     *
+     * @author R. Scarberry
+     *
+     */
+    public static class Builder {
+
+        private JarvisPatrickParams params;
+
+        public Builder() {
+            params = new JarvisPatrickParams();
+        }
+
+        public Builder nearestNeighborsToExamine(int nearestNeighborsToExamine) {
+            params.setNearestNeighborsToExamine(nearestNeighborsToExamine);
+            return this;
+        }
+
+        public Builder nearestNeighborOverlap(int nearestNeighborOverlap) {
+            params.setNearestNeighborOverlap(nearestNeighborOverlap);
+            return this;
+        }
+
+        public Builder mutualNearestNeighbors(boolean b) {
+            params.setMutualNearestNeighbors(b);
+            return this;
+        }
+
+        public Builder workerThreadCount(int n) {
+            params.setWorkerThreadCount(n);
+            return this;
+        }
+
+        public Builder distanceMetric(DistanceMetric distanceMetric) {
+            params.setDistanceMetric(distanceMetric);
+            return this;
+        }
+
+        public JarvisPatrickParams build() {
+            return params;
+        }
+    }
+
 }

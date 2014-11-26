@@ -35,56 +35,57 @@ import org.battelle.clodhopper.tuple.TupleList;
  * GMeansClusterer.java
  *
  *===================================================================*/
-
 /**
  * Implementation of the g-means clustering algorithm.
- * <br />
- * See the following reference: 
  * 
- * Greg Hamerly, Charles Elkan: "Learning the k in k-means",
- * Neural Information Processing Systems, 2003
- * 
- * at http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.9.3574<br />
-
+ * See the following reference:
+ *
+ * Greg Hamerly, Charles Elkan: "Learning the k in k-means", Neural Information
+ * Processing Systems, 2003
+ *
+ * at http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.9.3574
+ *
  * @author R.Scarberry
  * @since 1.0
  *
  */
 public class GMeansClusterer extends KMeansSplittingClusterer {
 
-	/**
-	 * Constructor
-	 * 
-	 * @param tuples
-	 * @param params
-	 */
-	public GMeansClusterer(TupleList tuples, GMeansParams params) {
-		super(tuples, params);
-	}
-	
-	@Override
-	/**
-	 * {@inheritDoc}
-	 */
-	public String taskName() {
-		return "g-means clustering";
-	}
+    /**
+     * Constructor
+     *
+     * @param tuples the tuples to be clustered.
+     * @param params contains the clustering parameters.
+     */
+    public GMeansClusterer(final TupleList tuples, final GMeansParams params) {
+        super(tuples, params);
+    }
 
-	@Override
-	/**
-	 * For g-means, this is a no-op.
-	 */
-	protected void initializeIteration(List<Cluster> clusters) {
-		// No op for g-means
-	}
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public String taskName() {
+        return "g-means clustering";
+    }
 
-	@Override
-	/**
-	 * {@inheritDoc}
-	 */
-	protected ClusterSplitter createSplitter(List<Cluster> clusters,
-			Cluster cluster) {
-		return new GMeansClusterSplitter(tuples, (GMeansParams) params);
-	}
+    @Override
+    /**
+     * For g-means, this is a no-op.
+     * 
+     * @param clusters a list of cluster instances.
+     */
+    protected void initializeIteration(final List<Cluster> clusters) {
+        // No op for g-means
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    protected ClusterSplitter createSplitter(final List<Cluster> clusters,
+            Cluster cluster) {
+        return new GMeansClusterSplitter(tuples, (GMeansParams) params);
+    }
 
 }

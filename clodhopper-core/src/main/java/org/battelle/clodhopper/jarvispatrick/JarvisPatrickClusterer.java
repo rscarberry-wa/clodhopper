@@ -17,9 +17,37 @@ import org.battelle.clodhopper.tuple.TupleList;
 import org.battelle.clodhopper.tuple.TupleMath;
 import org.battelle.clodhopper.util.ArrayIntIterator;
 
+/*=====================================================================
+ * 
+ *                       CLODHOPPER CLUSTERING API
+ * 
+ * -------------------------------------------------------------------- 
+ * 
+ * Copyright (C) 2013 Battelle Memorial Institute 
+ * http://www.battelle.org
+ * 
+ * -------------------------------------------------------------------- 
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License")
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ * 
+ * -------------------------------------------------------------------- 
+ * *
+ * JarvisPatrickClusterer.java
+ *
+ *===================================================================*/
 /**
  * <p>Implementation class for the Jarvis-Patrick clustering algorithm.
- * For each tuple, Jarvis-Patrick clustering examines K nearest neighbors, with K >= 2.
+ * For each tuple, Jarvis-Patrick clustering examines K nearest neighbors, with K &gt;= 2.
  * Two tuples are assigned to the same cluster if their lists of K nearest neighbors
  * have an overlap of J, with J in [1, K].  Some implementations of Jarvis-Patrick 
  * also require tuples to be in each other's lists of nearest neighbors for them to be 
@@ -40,10 +68,10 @@ public class JarvisPatrickClusterer extends AbstractClusterer {
   /**
    * Constructor.
    * 
-   * @param tuples
-   * @param params
+   * @param tuples contains the data to cluster.
+   * @param params contains the clustering parameters.
    */
-  public JarvisPatrickClusterer(TupleList tuples, JarvisPatrickParams params) {
+  public JarvisPatrickClusterer(final TupleList tuples, final JarvisPatrickParams params) {
     if (tuples == null || params == null) {
       throw new NullPointerException();
     }
@@ -51,6 +79,9 @@ public class JarvisPatrickClusterer extends AbstractClusterer {
     this.params = params;
   }
 
+  /**
+   * {@inheritDoc }
+   */
   @Override
   public String taskName() {
     return "Jarvis-Patrick clustering";
@@ -107,7 +138,7 @@ public class JarvisPatrickClusterer extends AbstractClusterer {
     // This ends the subsection of progress.
     ph.postEnd();
     
-    List<TIntArrayList> clusterMemberships = new ArrayList<TIntArrayList>();
+    List<TIntArrayList> clusterMemberships = new ArrayList<>();
 
     // The number of executions of the inner loop.
     final int remainingSteps = tupleCount * (tupleCount - 1)/2;
@@ -183,7 +214,7 @@ public class JarvisPatrickClusterer extends AbstractClusterer {
       }
     }
 
-    List<Cluster> clusters = new ArrayList<Cluster>();
+    List<Cluster> clusters = new ArrayList<>();
 
     for (TIntArrayList memberList : clusterMemberships) {
       memberList.trimToSize();
@@ -254,7 +285,7 @@ public class JarvisPatrickClusterer extends AbstractClusterer {
     
     // Compute the nearest neighbors concurrently.
     final int workerCount = params.getWorkerThreadCount();
-    List<NearestNeighborWorker> workers = new ArrayList<NearestNeighborWorker> (workerCount);
+    List<NearestNeighborWorker> workers = new ArrayList<> (workerCount);
     
     int perWorker = tupleCount/workerCount;
     // If workerCount isn't evenly divisible into tupleCount, some of the workers
@@ -331,12 +362,12 @@ public class JarvisPatrickClusterer extends AbstractClusterer {
   //
   private class NearestNeighborWorker implements Callable<Void> {
 
-    private int startTuple;
-    private int endTuple;
-    private int nnCount;
-    private TupleKDTree tupleKDTree;
-    private int[][] nnArray;
-    private ProgressHandler ph;
+    private final int startTuple;
+    private final int endTuple;
+    private final int nnCount;
+    private final TupleKDTree tupleKDTree;
+    private final int[][] nnArray;
+    private final ProgressHandler ph;
     
     private NearestNeighborWorker(int startTuple, int endTuple, int nnCount, 
         TupleKDTree tupleKDTree, int[][] nnArray, ProgressHandler ph) {

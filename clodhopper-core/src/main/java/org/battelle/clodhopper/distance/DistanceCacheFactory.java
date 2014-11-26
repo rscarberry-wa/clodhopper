@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Optional;
 
 /*=====================================================================
  * 
@@ -65,35 +66,35 @@ public class DistanceCacheFactory {
      * @param cacheFile the file to use for the cache if a disk file is used for
      * the cache.
      *
-     * @return an instance of <code>DistanceCache</code> or null if the amount
-     * of space required exceeds both the memory and file thresholds.
+     * @return an <code>Optional</code> containing an instance of <code>DistanceCache</code> or 
+     *     <code>Optional.absent()</code> if neither of the thresholds can be met.
      *
-     * @throws IOException
+     * @throws IOException if an IO error occurs.
      */
-    public static DistanceCache newDistanceCache(
+    public static Optional<DistanceCache> newDistanceCache(
         final int tupleCount,
         final long memoryThreshold,
         final long fileThreshold,
         final File cacheFile) throws IOException {
 
+        DistanceCache cache = null;
+        
         long size = distanceCacheSize(tupleCount);
         if (size <= memoryThreshold) {
-            return new RAMDistanceCache(tupleCount);
+            cache = new RAMDistanceCache(tupleCount);
         } else if (size <= fileThreshold) {
-            return new FileDistanceCache(tupleCount, cacheFile);
+            cache = new FileDistanceCache(tupleCount, cacheFile);
         }
 
-        return null;
+        return Optional.ofNullable(cache);
     }
 
     /**
      * Wraps the provided distance cache to hide write operations.
      *
-     * results in <code>UnsupportedOperationException</code>s.
+     * @param cache the <code>DistanceCacheFactory</code> to be wrapped.
      *
-     * @param cache
-     *
-     * @return
+     * @return a <code>ReadOnlyDistanceCache</code>
      */
     public static ReadOnlyDistanceCache asReadOnly(final DistanceCache cache) {
         if (cache instanceof ReadOnlyDistanceCache) {
@@ -107,8 +108,8 @@ public class DistanceCacheFactory {
      * Returns the amount of file space required to store all the distances for
      * the specified number of tuples.
      *
-     * @param tupleCount
-     * @return
+     * @param tupleCount the number of tuples.
+     * @return the size in bytes required for the distances.
      */
     public static long distanceCacheSize(final int tupleCount) {
         return 4L + 4L * tupleCount * ((long) tupleCount - 1);
@@ -118,8 +119,9 @@ public class DistanceCacheFactory {
      * Returns the maximum number of tuples whose pairwise distances can fit
      * within the specified number of bytes.
      *
-     * @param byteThreshold
-     * @return
+     * @param byteThreshold the threshold in bytes.
+     * @return the maximum number of tuples whose pairwise distances can be
+     *     stored in the given number of bytes.
      */
     public static int tupleLimit(final long byteThreshold) {
         return (int) ((Math.sqrt(16.0 + 16.0 * (byteThreshold - 4L)) + 4.0) / 8.0);
@@ -127,13 +129,14 @@ public class DistanceCacheFactory {
 
     /**
      * Returns a 2-element array containing the indexes of the tuples whose
-     * distance is stored at the specified position in the distance case.
+     * distance is stored at the specified position in the distance cache.
      *
-     * @param pos
-     * @param cache
-     * @return
+     * @param pos the index at which the distance is stored.
+     * @param cache the cache containing the distances.
+     * @return the two tuple indexes whose pairwise distance is stored at the 
+     *     specified position.
      */
-    public static int[] getIndicesForDistance(long pos, ReadOnlyDistanceCache cache) {
+    public static int[] getIndicesForDistance(final long pos, final ReadOnlyDistanceCache cache) {
 
         if (pos < 0 || pos >= cache.getNumDistances()) {
             throw new IndexOutOfBoundsException("pos not in [0 - ("
@@ -154,9 +157,9 @@ public class DistanceCacheFactory {
     /**
      * Saves a <code>DistanceCache</code> to a disk file.
      *
-     * @param cache
-     * @param f
-     * @throws IOException
+     * @param cache the <code>DistanceCache</code>
+     * @param f the file to which the distances should be stored.
+     * @throws IOException if an IO error occurs.
      */
     public static void save(final DistanceCache cache, final File f) throws IOException {
 
@@ -248,13 +251,14 @@ public class DistanceCacheFactory {
      * Loads a distance caches from a disk file if the number of distances in
      * the file fits within the specified thresholds.
      *
-     * @param f
-     * @param memoryThreshold
-     * @param fileThreshold
-     * @return
-     * @throws IOException
+     * @param f the file from which to read the distances.
+     * @param memoryThreshold the max threshold for storing all distances in a <code>RAMDistanceCache</code>.
+     * @param fileThreshold the max threshold for accessing the distances using a <code>FileDistanceCache</code>.
+     * @return an <code>Optional</code> containing an instance of <code>DistanceCache</code> or 
+     *     <code>Optional.absent()</code> if neither of the thresholds can be met.
+     * @throws IOException if an IO error occurs.
      */
-    public static DistanceCache read(
+    public static Optional<DistanceCache> read(
         final File f,
         final long memoryThreshold,
         final long fileThreshold) throws IOException {
@@ -314,7 +318,7 @@ public class DistanceCacheFactory {
 
         }
 
-        return cache;
+        return Optional.ofNullable(cache);
     }
 
     // Wrapper that hides the methods for setting distances.

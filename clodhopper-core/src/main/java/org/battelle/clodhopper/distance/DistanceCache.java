@@ -41,18 +41,20 @@ public interface DistanceCache extends ReadOnlyDistanceCache {
     /**
      * Set the distance between the identities identified by index1 and index2.
      *
-     * @param index1
-     * @param index2
-     * @param distance
+     * @param index1 the first index.
+     * @param index2 the second index.
+     * @param distance the distance between the two indexed entities.
+     * @throws IOException if an IO error occurs.
      */
     public void setDistance(int index1, int index2, double distance) throws IOException;
 
     /**
      * Set distances in bulk. All three arrays must be the same length.
      *
-     * @param indices1
-     * @param indices2
-     * @param distances
+     * @param indices1 the first array of indexes.
+     * @param indices2 the second array of indexes.
+     * @param distances the array of distances.
+     * @throws IOException if an IO error occurs.
      */
     public void setDistances(int[] indices1, int[] indices2, double[] distances) throws IOException;
 

@@ -31,11 +31,10 @@ import java.io.IOException;
  *
  *===================================================================*/
 /**
- * A cache storing distances relating pairs of entities denoted by integer
+ * <p>A cache storing distances relating pairs of entities denoted by integer
  * indices. Normally used for storing similarity measures such as distances or
  * correlations, but the measures could mean anything as long as they obey these
  * properties:</p>
- * assumptions:
  * <ul>
  * <li>Indices are numbered from 0 to <code>(getNumIndices() - 1)</code>.
  * <li>For indices i and j, Dij = Dji, where Dij is the distance between indices
@@ -59,9 +58,10 @@ public interface ReadOnlyDistanceCache {
     /**
      * Get the distance between the entities represented by index1 and index2.
      *
-     * @param index1
-     * @param index2
-     * @return
+     * @param index1 the first index.
+     * @param index2 the second index.
+     * @return the distance between the entities identified by the indexes.
+     * @throws IOException if an IO error occurs.
      */
     public double getDistance(int index1, int index2) throws IOException;
 
@@ -72,10 +72,13 @@ public interface ReadOnlyDistanceCache {
      * the same length as indices1 and indices2. If it's null, a new distances
      * array is allocated and returned.
      *
-     * @param indices1
-     * @param indices2
-     * @param distances
-     * @return
+     * @param indices1 the first array of indexes.
+     * @param indices2 the second array of indexes.
+     * @param distances an array to which, if null and of sufficient length, the 
+     *   distances are copied.
+     * @return the array of distances which will be the same as the third parameter if
+     *   it is non-null and of sufficient length. Otherwise, a new array is returned.
+     * @throws IOException if an IO error occurs.
      */
     public double[] getDistances(int[] indices1, int[] indices2, double[] distances) throws IOException;
 
@@ -90,9 +93,9 @@ public interface ReadOnlyDistanceCache {
     /**
      * Get distance n, where n is in <code>[0 - (getNumDistances() - 1)]</code>.
      *
-     * @param n
-     * @return
-     * @throws IOException
+     * @param n index of the desired distance.
+     * @return the distance
+     * @throws IOException if an IO errors occurs.
      */
     public double getDistance(long n) throws IOException;
 
@@ -101,8 +104,8 @@ public interface ReadOnlyDistanceCache {
      * and index2. Both parameters should be in the range [0 - (getNumIndices()
      * - 1)] and not equal to each other.
      *
-     * @param index1
-     * @param index2
+     * @param index1 the first index.
+     * @param index2 the second index.
      * @return - a distance position in the range [0 - (getNumDistances() - 1)].
      */
     public long distancePos(int index1, int index2);
