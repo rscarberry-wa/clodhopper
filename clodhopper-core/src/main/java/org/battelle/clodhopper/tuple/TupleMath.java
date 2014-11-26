@@ -106,7 +106,7 @@ public final class TupleMath {
      * Computes a <code>HyperRect</code> that forms the minimum-sized bounding box for
      * the data in the supplied <code>TupleList</code>.
      * 
-     * @param tuples
+     * @param tuples the <code>TupleList</code> containing the data.
      * 
      * @return an instance of <code>HyperRect</code>. 
      */
@@ -315,11 +315,11 @@ public final class TupleMath {
     /**
      * Computes the L1 Norm of an array of tuple values.
      *
-     * @param tuple
+     * @param tuple an array containing the data for a tuple.
      *
      * @return the norm.
      */
-    public static double norm1(double[] tuple) {
+    public static double norm1(final double[] tuple) {
         double sum = 0.0;
         int n = tuple.length;
         int nanCount = 0;
@@ -581,8 +581,12 @@ public final class TupleMath {
      *
      * (Grant Nakamura originally wrote this code for the DistributionUtils
      * class in the IN-SPIRE codebase. R. Scarberry adapted it for JAC.)
+     * 
+     * @param x the independent variable.
+     * 
+     * @return the value for the probability density in the range [0 - 1].
      */
-    static public double normalPdf(double x) {
+    static public double normalPdf(final double x) {
         double pdf = Math.exp(-x * x / 2) / SQRT2PI;
         return pdf;
     }
@@ -590,13 +594,17 @@ public final class TupleMath {
     /**
      * Computes the cumulative distribution function for a standard (mean = 0,
      * variance = 1) normal distribution. This uses a numerical approximation
-     * with absolute error < 7.5e-8, (eq. 26.2.17) from the Handbook of
-     * Mathematical Functions, Abramowitz & Stegun, 10th printing.
+     * with absolute error &lt; 7.5e-8, (eq. 26.2.17) from the Handbook of
+     * Mathematical Functions, Abramowitz and Stegun, 10th printing.
      *
      * (Grant Nakamura originally wrote this code for the DistributionUtils
      * class in the IN-SPIRE codebase. R. Scarberry adapted it for JAC.)
+     * 
+     * @param x the independent variable.
+     * 
+     * @return the cumulative density, which is in the range [0 - 1].
      */
-    public static double normalCdf(double x) {
+    public static double normalCdf(final double x) {
         final double p = 0.2316419;
         final double[] b = {0.319381530, -0.356563782, 1.781477937,
             -1.821255978, 1.330274429};
@@ -624,8 +632,12 @@ public final class TupleMath {
      *
      * (Grant Nakamura originally wrote this code for the DistributionUtils
      * class in the IN-SPIRE codebase. R. Scarberry adapted it for JAC.)
+     * 
+     * @param values contains the distribution values to test.
+     * 
+     * @return true if the data appears to be Gaussian, false otherwise.
      */
-    public static boolean andersonDarlingGaussianTest(double[] values) {
+    public static boolean andersonDarlingGaussianTest(final double[] values) {
 
         boolean result = false;
 
@@ -673,15 +685,14 @@ public final class TupleMath {
     /**
      * Returns the dot product of the two arrays of double values.
      *
-     * @param buf1
-     * @param buf2
+     * @param buf1 array containing the first vector.
+     * @param buf2 array containing the second vector.
      *
      * @return the dot product.
      *
-     * @throws IllegalArgumentException - if both arrays do not have the same
-     * length.
+     * @throws IllegalArgumentException - if the arrays have unequal lengths.
      */
-    public static double dotProduct(double[] buf1, double[] buf2) {
+    public static double dotProduct(final double[] buf1, final double[] buf2) {
         if (buf1.length != buf2.length) {
             throw new IllegalArgumentException("buf1.length != buf2.length: "
                     + buf1.length + " != " + buf2.length);

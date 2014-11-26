@@ -3,6 +3,7 @@ package org.battelle.clodhopper.tuple;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -152,6 +153,37 @@ public class TupleKDTreeTest {
     System.out.println("root balance factor = " + node.balanceFactor());
   }
 
+  @Test
+  public void testNearestNdxNum() {
+      
+    int tupleCount = 5;
+    int numClusters = 1;
+    int tupleLength = 10;
+    int nnCount = tupleCount - 1;
+    
+    TupleList tuples = generateTestTuples(tupleCount, tupleLength, numClusters, 123L);
+    DistanceMetric distMetric = new EuclideanDistanceMetric();
+
+    TupleKDTree kdTree = TupleKDTree.forTupleList(tuples, distMetric);
+    
+    for (int i=0; i<tupleCount; i++) {
+        int[] nn = kdTree.nearest(i, nnCount);
+        BitSet bits = new BitSet(tupleCount);
+        for (int j=0; j<nn.length; j++) {
+            int bit = nn[j];
+            // A nn id should only be included once in the results.
+            assertFalse(bits.get(bit));
+            bits.set(bit);
+        }
+        // The search id shouldn't be among the nearest neighbors if asking for  
+        // fewer nearest neighbors than in the tree.
+        assertFalse(bits.get(i));
+        
+        // There should be this many nearest neighbors.
+        assertTrue(bits.cardinality() == nnCount);
+    }
+  }
+  
   private static List<TupleKDTree.DistanceEntry> sortedDistanceEntries(int ndx, TupleList tuples, DistanceMetric distanceMetric) {
     
     final int tupleCount = tuples.getTupleCount();

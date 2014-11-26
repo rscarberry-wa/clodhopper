@@ -10,6 +10,34 @@ import org.battelle.clodhopper.distance.DistanceMetric;
 import org.battelle.clodhopper.util.IntComparator;
 import org.battelle.clodhopper.util.Sorting;
 
+/*=====================================================================
+ * 
+ *                       CLODHOPPER CLUSTERING API
+ * 
+ * -------------------------------------------------------------------- 
+ * 
+ * Copyright (C) 2013 Battelle Memorial Institute 
+ * http://www.battelle.org
+ * 
+ * -------------------------------------------------------------------- 
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License")
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ * 
+ * -------------------------------------------------------------------- 
+ * *
+ * TupleKDTree.java
+ *
+ *===================================================================*/
 /**
  * Represents a KD-Tree for points represented as tuples within a
  * <code>TupleList</code>.
@@ -21,29 +49,32 @@ import org.battelle.clodhopper.util.Sorting;
 public class TupleKDTree {
 
     // All points stored in this kd-tree must be from this tuple list.
-    private TupleList tuples;
-  // The distance metric used for any distance computations, such as
+    private final TupleList tuples;
+    // The distance metric used for any distance computations, such as
     // those used for computing nearest neighbors.
-    private DistanceMetric distanceMetric;
-  // The maximum index for tuples that can be added to this kd-tree.
+    private final DistanceMetric distanceMetric;
+    // The maximum index for tuples that can be added to this kd-tree.
     // This is equal to the tuple count minus 1.
     private int maxNdx;
 
     // Contains the indexes of tuples that have been added. -1 means empty.
     private int[] nodes;
-  // lefts and rights correspond 1:1 with elements of nodes. If nodes[n] contains a tuple index,
+    // lefts and rights correspond 1:1 with elements of nodes. If nodes[n] contains a tuple index,
     // lefts[n] contains an index into nodes of the left child tuple. rights[n] contains the index into
     // nodes of the right child tuple. -1 indicates no child set.
     private int[] lefts;
     private int[] rights;
-  // Set to true if a previously-added tuple has been removed. Rather than reshuffle the elements of the arrays,
-    // the flag is simply flipped.
-    private boolean[] deleted;
 
     // Number of tuples that have been added.
     private int count;
 
-    public TupleKDTree(TupleList tuples, DistanceMetric distanceMetric) {
+    /**
+     * Constructor
+     * 
+     * @param tuples the <code>TupleList</code> which contains the data source for the kd-tree.
+     * @param distanceMetric the <code>DistanceMetric</code> to use.
+     */
+    public TupleKDTree(final TupleList tuples, final DistanceMetric distanceMetric) {
         if (tuples == null || distanceMetric == null) {
             throw new NullPointerException();
         }
@@ -53,6 +84,11 @@ public class TupleKDTree {
         ensureCapacity(100);
     }
 
+    /**
+     * Returns the root node for object-oriented traversal.
+     * 
+     * @return the root node. 
+     */
     public KDNode getRoot() {
         if (count > 0) {
             return new KDNode(0, 0);
@@ -60,14 +96,28 @@ public class TupleKDTree {
         return null;
     }
 
+    /**
+     * Get the tuple list for the kd-tree.
+     * 
+     * @return an instance of <code>TupleList</code>. 
+     */
     public TupleList getTupleList() {
         return tuples;
     }
 
+    /**
+     * Get the distance metric.
+     * 
+     * @return an instance of <code>DistanceMetric</code>. 
+     */
     public DistanceMetric getDistanceMetric() {
         return distanceMetric;
     }
 
+    /**
+     * Get the number of dimensions.
+     * @return the number of dimensions.
+     */
     public int getDimensions() {
         return tuples.getTupleLength();
     }
@@ -76,12 +126,13 @@ public class TupleKDTree {
      * Factory method that builds a kd-tree from a tuple list by adding every
      * tuple.
      *
-     * @param tuples
-     * @param distanceMetric
-     * @return
+     * @param tuples the <code>TupleList</code>.
+     * @param distanceMetric the <code>DistanceMetric</code>.
+     * @return a fully populated kd-tree.
      */
-    public static TupleKDTree forTupleList(TupleList tuples,
-            DistanceMetric distanceMetric) {
+    public static TupleKDTree forTupleList(final TupleList tuples,
+        final DistanceMetric distanceMetric) {
+        
         TupleKDTree kd = new TupleKDTree(tuples, distanceMetric);
         int tupleCount = tuples.getTupleCount();
         for (int i = 0; i < tupleCount; i++) {
@@ -90,8 +141,16 @@ public class TupleKDTree {
         return kd;
     }
 
-    public static TupleKDTree forTupleListBalanced(TupleList tuples,
-            DistanceMetric distanceMetric) {
+    /**
+     * Factory method that builds a balanced kd-tree from a tuple list.
+     * 
+     * @param tuples the <code>TupleList</code>.
+     * @param distanceMetric the <code>DistanceMetric</code>.
+     * @return a fully populated kd-tree.
+     */
+    public static TupleKDTree forTupleListBalanced(final TupleList tuples,
+        final DistanceMetric distanceMetric) {
+        
         final TupleKDTree kd = new TupleKDTree(tuples, distanceMetric);
         final int tupleCount = tuples.getTupleCount();
         final int tupleLen = tuples.getTupleLength();
@@ -108,12 +167,12 @@ public class TupleKDTree {
     }
 
     private static void generateBalanced(
-            TupleKDTree kdtree,
-            int[] indices,
-            int left,
-            int right,
-            int dim,
-            IntComparator[] comparators) {
+        final TupleKDTree kdtree,
+        final int[] indices,
+        final int left,
+        final int right,
+        final int dim,
+        final IntComparator[] comparators) {
 
         if (left <= right) {
 
@@ -143,7 +202,7 @@ public class TupleKDTree {
         }
     }
 
-    private void ensureCapacity(int minCap) {
+    private void ensureCapacity(final int minCap) {
         int curCap = currentCapacity();
         if (curCap < minCap) {
             int newCap = Math.max(curCap * 2, minCap);
@@ -155,7 +214,6 @@ public class TupleKDTree {
                 System.arraycopy(nodes, 0, newNodes, 0, curCap);
                 System.arraycopy(lefts, 0, newLefts, 0, curCap);
                 System.arraycopy(rights, 0, newRights, 0, curCap);
-                System.arraycopy(deleted, 0, newDeleted, 0, curCap);
             }
             Arrays.fill(newNodes, curCap, newCap, -1);
             Arrays.fill(newLefts, curCap, newCap, -1);
@@ -164,7 +222,6 @@ public class TupleKDTree {
             nodes = newNodes;
             lefts = newLefts;
             rights = newRights;
-            deleted = newDeleted;
         }
     }
 
@@ -172,7 +229,7 @@ public class TupleKDTree {
         return nodes != null ? nodes.length : 0;
     }
 
-    private void newNodeOnLeft(int parentIndex, int ndx) {
+    private void newNodeOnLeft(final int parentIndex, final int ndx) {
         int m = count;
         count++;
         ensureCapacity(count);
@@ -181,7 +238,7 @@ public class TupleKDTree {
         lefts[parentIndex] = m;
     }
 
-    private void newNodeOnRight(int parentIndex, int ndx) {
+    private void newNodeOnRight(final int parentIndex, final int ndx) {
         int m = count;
         count++;
         ensureCapacity(count);
@@ -189,13 +246,18 @@ public class TupleKDTree {
         rights[parentIndex] = m;
     }
 
-    private void checkNdx(int ndx) {
+    private void checkNdx(final int ndx) {
         if (ndx < 0 || ndx > maxNdx) {
             throw new IndexOutOfBoundsException("out of bounds: " + ndx);
         }
     }
 
-    public void insert(int ndx) {
+    /**
+     * Insert the tuple with the specified index.
+     * 
+     * @param ndx index of the tuple to insert. 
+     */
+    public void insert(final int ndx) {
 
         checkNdx(ndx);
 
@@ -220,18 +282,12 @@ public class TupleKDTree {
 
             if (curNode == ndx) {
 
-                // If inserted before and then deleted, just reset the delete flag.
-                if (deleted[n]) {
-                    deleted[n] = false;
-                    return;
-                }
-
-                // Not allowed to insert the same tuple more than once.
-                throw new IllegalArgumentException("duplicate insertion: " + ndx);
-
+                // Already present, return.
+                return;
+                
             } else {
 
-    	  // Pick the dimension for comparison, which cycles from 0 to (dim-1), then
+                // Pick the dimension for comparison, which cycles from 0 to (dim-1), then
                 // starts over.
                 int d = depth % dim;
 
@@ -268,11 +324,18 @@ public class TupleKDTree {
 
     }
 
-    public boolean delete(int ndx) {
-
+    /**
+     * Checks whether or not the tuple with the specified index has been added to the 
+     * kd-tree.
+     * 
+     * @param ndx the index of the tuple whose presence to check.
+     * 
+     * @return true if the tuple is in the kd-tree, false otherwise. 
+     */
+    public boolean contains(final int ndx) {
         checkNdx(ndx);
 
-        // Can't delete anything if empty.
+        // Can't find anything if empty.
         if (count == 0) {
             return false;
         }
@@ -284,7 +347,6 @@ public class TupleKDTree {
         while (true) {
             int curNode = nodes[n];
             if (curNode == ndx) {
-                deleted[n] = true;
                 return true;
             } else {
                 int d = depth % dim;
@@ -307,17 +369,17 @@ public class TupleKDTree {
             depth++;
         } // while
     }
-
+    
     /**
      * Searches for an added tuple having the specified values. This method only
      * returns a non-zero tuple index if an exact match is found. Use
      * <code>closeTo()</code> to find close matches.
      *
-     * @param coords
+     * @param coords the coordinates for which to search.
      *
      * @return the tuple index if the values are matched exactly, -1 otherwise.
      */
-    public int search(double[] coords) {
+    public int search(final double[] coords) {
 
         int n = 0;
         int depth = 0;
@@ -336,7 +398,7 @@ public class TupleKDTree {
 
             tuples.getTuple(curNode, nodeCoords);
 
-            if (!deleted[n] && coordsEqual(coords, nodeCoords)) {
+            if (Arrays.equals(coords, nodeCoords)) {
                 return curNode;
             }
 
@@ -354,7 +416,15 @@ public class TupleKDTree {
 
     }
 
-    public int nearestNeighbor(int ndx) {
+    /**
+     * Finds the nearest neighbor of the tuple with the specified index. If the tuple
+     * with the specified index is in the kd-tree, the nearest different index is returned.
+     * 
+     * @param ndx the index of the tuple.
+     * 
+     * @return the index of the nearest neighbor or -1 if none found.
+     */
+    public int nearestNeighbor(final int ndx) {
 
         checkNdx(ndx);
 
@@ -367,14 +437,36 @@ public class TupleKDTree {
         return nn[0] == ndx ? nn[1] : nn[0];
     }
 
-    public int nearest(double[] coords) {
+    /**
+     * Finds the tuple that is closest to the specified coordinate.
+     * 
+     * @param coords array containing the coordinate value. Its length should be equal
+     *   to the dimensionality of the tuples added to the kd-tree.
+     * 
+     * @return the index of the nearest tuple or -1 if none found. 
+     */
+    public int nearest(final double[] coords) {
         int[] nn = nearest(coords, 1);
         return nn[0];
     }
 
-    public int[] nearest(int ndx, int num) {
+    /**
+     * Finds the nearest neighbors of the tuple with the specified index.
+     * 
+     * @param ndx the index of the tuple.
+     * @param num the number of nearest neighbors to return.
+     * 
+     * @return array of length <code>num</code> containing the tuple indexes of the 
+     *     nearest neighbors.
+     * 
+     * @throws IllegalArgumentException if <code>num</code> is greater than the number
+     *     of tuples added to the kd-tree exclusive of the search tuple.
+     */
+    public int[] nearest(final int ndx, final int num) {
 
-        if (num < 0 || num > count) {
+        final int maxNum = num == count ? (contains(ndx) ? count - 1 : count) : count;
+        
+        if (num < 0 || num > maxNum) {
             throw new IllegalArgumentException(
                     "number of neighbors negative or greater than number of nodes: "
                     + num);
@@ -384,7 +476,7 @@ public class TupleKDTree {
         double[] coords = new double[dim];
         tuples.getTuple(ndx, coords);
 
-        LinkedList<DistanceEntry> distanceList = new LinkedList<DistanceEntry>();
+        LinkedList<DistanceEntry> distanceList = new LinkedList<>();
 
         rnearest(0, coords, num, HyperRect.infiniteHyperRect(dim),
                 Double.MAX_VALUE, 0, dim, distanceList, ndx);
@@ -398,7 +490,17 @@ public class TupleKDTree {
         return ids;
     }
 
-    public int[] nearest(double[] coords, int num) {
+    /**
+     * Search for nearest neighbors of a specified coordinate.
+     * @param coords the search coordinate, which should have the same number of dimensions
+     *     as the tuples added to this kd-tree.
+     * @param num the number of nearest neighbors desired.
+     * @return an array of length <code>num</code> containing the nearest neighbor indexes.
+     * 
+     * @throws IllegalArgumentException if <code>num</code> is greater than the number
+     *     of tuples added to the kd-tree.
+     */
+    public int[] nearest(final double[] coords, final int num) {
 
         if (num < 0 || num > count) {
             throw new IllegalArgumentException(
@@ -422,7 +524,15 @@ public class TupleKDTree {
         return ids;
     }
 
-    public int[] closeTo(int ndx, double maxDistance) {
+    /**
+     * Search for tuples close to another tuple.
+     * 
+     * @param ndx the index of the search tuple.
+     * @param maxDistance the maximum distance threshold for the result.
+     * @return an array, possibly of length 0, of the indexes of other tuples within the 
+     *     specified distance of the search tuple.
+     */
+    public int[] closeTo(final int ndx, final double maxDistance) {
 
         int dim = tuples.getTupleLength();
         double[] coords = new double[dim];
@@ -443,11 +553,20 @@ public class TupleKDTree {
         return ids;
     }
 
-    public int[] closeTo(double[] coords, double maxDistance) {
+    /**
+     * Search for tuples close to a coordinate.
+     * 
+     * @param coords the search coordinate, which should have the same number of dimensions
+     *     as the tuples added to this kd-tree.
+     * @param maxDistance the maximum distance threshold for the result.
+     * @return an array, possibly of length 0, of the indexes of other tuples within the 
+     *     specified distance of the search tuple.
+     */
+    public int[] closeTo(final double[] coords, final double maxDistance) {
 
         int dim = coords.length;
 
-        LinkedList<DistanceEntry> distanceList = new LinkedList<DistanceEntry>();
+        LinkedList<DistanceEntry> distanceList = new LinkedList<>();
 
         rcloseTo(0, coords, HyperRect.infiniteHyperRect(dim), maxDistance, 0,
                 dim, distanceList, -1);
@@ -462,7 +581,13 @@ public class TupleKDTree {
         return ids;
     }
 
-    public int[] inside(HyperRect rect) {
+    /**
+     * Search for all tuples contained in the specified region of space.
+     * @param rect a <code>HyperRect</code> defining the search region.
+     * @return an array, possibly of length 0, containing the indexes of tuples 
+     *     contained within the search space.
+     */
+    public int[] inside(final HyperRect rect) {
         final int dim = tuples.getTupleLength();
         if (rect.getDimension() != dim) {
             throw new IllegalArgumentException("dimension mismatch: "
@@ -485,9 +610,15 @@ public class TupleKDTree {
         return intList.toArray();
     }
 
-    private void rnearest(int curNodeNdx, double[] targetCoords, int num,
-            HyperRect hr, double maxDistance, int level, int dim,
-            LinkedList<DistanceEntry> distanceList, int ndxToExclude) {
+    private void rnearest(final int curNodeNdx, 
+        final double[] targetCoords, 
+        final int num,
+        final HyperRect hr, 
+        double maxDistance, 
+        final int level, 
+        final int dim,
+        final LinkedList<DistanceEntry> distanceList, 
+        final int ndxToExclude) {
 
         int curNode = nodes[curNodeNdx];
         if (curNode < 0) {
@@ -561,7 +692,7 @@ public class TupleKDTree {
             }
         }
 
-        if (!deleted[curNodeNdx] && curNode != ndxToExclude) {
+        if (curNode != ndxToExclude) {
             double curToTarget = distanceMetric.distance(curCoords, targetCoords);
             if (curToTarget < maxDistance) {
                 addToDistanceList(distanceList, new DistanceEntry(curNode, curToTarget), num);
@@ -569,10 +700,13 @@ public class TupleKDTree {
         }
     }
 
-    private static void addToDistanceList(LinkedList<DistanceEntry> distanceList, DistanceEntry entry, int maxSize) {
+    private static void addToDistanceList(final LinkedList<DistanceEntry> distanceList, 
+        final DistanceEntry entry, 
+        final int maxSize) {
+        
         int n = Collections.binarySearch(distanceList, entry);
         if (n < 0) {
-      // The usual case, since this method is never called if an entry is already in the 
+            // The usual case, since this method is never called if an entry is already in the 
             // list.
             n = -n - 1;
             distanceList.add(n, entry);
@@ -582,9 +716,14 @@ public class TupleKDTree {
         }
     }
 
-    private void rcloseTo(int curNodeNdx, double[] targetCoords, HyperRect hr,
-            double maxDistance, int level, int dim, LinkedList<DistanceEntry> distanceList,
-            int ndxToExclude) {
+    private void rcloseTo(final int curNodeNdx, 
+        final double[] targetCoords, 
+        final HyperRect hr,
+        final double maxDistance, 
+        final int level, 
+        final int dim, 
+        final LinkedList<DistanceEntry> distanceList,
+        final int ndxToExclude) {
 
         int curNode = nodes[curNodeNdx];
         if (curNode < 0) {
@@ -649,7 +788,7 @@ public class TupleKDTree {
             }
         }
 
-        if (!deleted[curNodeNdx] && curNode != ndxToExclude) {
+        if (curNode != ndxToExclude) {
             double curToTarget = distanceMetric.distance(curCoords, targetCoords);
             if (curToTarget <= maxDistance) {
                 addToDistanceList(distanceList, new DistanceEntry(curNode, curToTarget), Integer.MAX_VALUE);
@@ -657,9 +796,14 @@ public class TupleKDTree {
         }
     }
 
-    private void rcloseTo(int curNodeNdx, double[] targetCoords, HyperRect hr,
-            double[] maxDiffs, int level, int dim, TIntArrayList intList,
-            int ndxToExclude) {
+    private void rcloseTo(final int curNodeNdx, 
+        final double[] targetCoords, 
+        final HyperRect hr,
+        final double[] maxDiffs, 
+        final int level, 
+        final int dim, 
+        final TIntArrayList intList,
+        final int ndxToExclude) {
 
         int curNode = nodes[curNodeNdx];
         if (curNode < 0) {
@@ -726,26 +870,11 @@ public class TupleKDTree {
             }
         }
 
-        if (!deleted[curNodeNdx] && curNodeNdx != ndxToExclude) {
+        if (curNodeNdx != ndxToExclude) {
             if (diffsWithinBoundaries(curCoords, targetCoords, maxDiffs)) {
                 intList.add(curNode);
             }
         }
-    }
-
-    public static boolean coordsEqual(double[] coords1, double[] coords2) {
-        int n = coords1.length;
-        if (coords2.length != n) {
-            throw new IllegalArgumentException("dimensions not equal: " + n + " != "
-                    + coords2.length);
-        }
-        for (int i = 0; i < n; i++) {
-            if (Double.doubleToLongBits(coords1[i]) != Double
-                    .doubleToLongBits(coords2[i])) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private static boolean diffsWithinBoundaries(double[] coords1,
@@ -820,10 +949,6 @@ public class TupleKDTree {
             return 0;
         }
 
-        public boolean isDeleted() {
-            return deleted[index];
-        }
-
         /**
          * Returns the balance factor for the node. If a node is perfectly
          * balanced, that is, having the same number of descendants on the left
@@ -833,7 +958,7 @@ public class TupleKDTree {
          * than the number of descendants on the left, the balance factor is
          * negative. Leaf nodes have a balance factor of NaN.
          *
-         * @return
+         * @return the balance factor.
          */
         public double balanceFactor() {
 

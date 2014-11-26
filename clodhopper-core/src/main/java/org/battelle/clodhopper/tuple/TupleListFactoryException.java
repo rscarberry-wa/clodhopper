@@ -30,10 +30,10 @@ import java.io.IOException;
  * TupleListFactoryException.java
  *
  *===================================================================*/
-
 /**
- * An exception class thrown when something goes wrong with a <code>TupleListFactory</code>
- * 
+ * An exception class thrown when something goes wrong with a
+ * <code>TupleListFactory</code>
+ *
  * @author R. Scarberry
  * @since 1.0
  *
@@ -45,31 +45,36 @@ public class TupleListFactoryException extends IOException {
     /**
      * Constructor
      */
-    public TupleListFactoryException() {}
-    
+    public TupleListFactoryException() {
+    }
+
     /**
      * Constructor
-     * @param message
+     *
+     * @param message the exception message.
      */
-    public TupleListFactoryException(String message) {
+    public TupleListFactoryException(final String message) {
         super(message);
     }
-    
+
     /**
      * Constructor
-     * @param cause
+     *
+     * @param cause another <code>Throwable</code> that triggered this
+     * exception.
      */
-    public TupleListFactoryException(Throwable cause) {
+    public TupleListFactoryException(final Throwable cause) {
         super(cause);
     }
-    
+
     /**
      * Constructor
-     * 
-     * @param message
-     * @param cause
+     *
+     * @param message the exception message.
+     * @param cause another <code>Throwable</code> that triggered this
+     * exception.
      */
-    public TupleListFactoryException(String message, Throwable cause) {
+    public TupleListFactoryException(final String message, final Throwable cause) {
         super(message, cause);
     }
 }

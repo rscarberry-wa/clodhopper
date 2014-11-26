@@ -32,7 +32,7 @@ import java.util.Set;
  *===================================================================*/
 /**
  * A <code>TupleListFactory</code> is an entity that creates and manages
- * </code>TupleList</code>s.
+ * <code>TupleList</code>s.
  *
  * @author R. Scarberry
  * @since 1.0
