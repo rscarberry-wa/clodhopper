@@ -18,7 +18,7 @@ public class IntegerHyperRect implements Cloneable {
      * 
      * @param dim - the dimensionality of the hyper-rectangle.
      */
-    public IntegerHyperRect(int dim) {
+    public IntegerHyperRect(final int dim) {
         mMinCorner = new int[dim];
         mMaxCorner = new int[dim];
     }
@@ -31,13 +31,13 @@ public class IntegerHyperRect implements Cloneable {
      * ensure that each element of minCorner is less than or equal to the
      * corresponding element of maxCorner.</p> 
      * 
-     * @param minCorner
-     * @param maxCorner
+     * @param minCorner contains the minimum values.
+     * @param maxCorner contains the maximum values.
      * 
      * @throws IllegalArgumentException - if minCorner and maxCorner do not
      *   have the same length.
      */
-    public IntegerHyperRect(int[] minCorner, int[] maxCorner) {
+    public IntegerHyperRect(final int[] minCorner, final int[] maxCorner) {
         int dim = minCorner.length;
         if (dim != maxCorner.length) {
             throw new IllegalArgumentException("inconsistent dimensions: "
@@ -63,7 +63,7 @@ public class IntegerHyperRect implements Cloneable {
     /**
      * Is this hyper-rectangle actually a point?  That is, are the min and max
      * vertices the same?
-     * @return boolean
+     * @return true is the minimum corner and the maximum corner are the same point.
      */
     public boolean isPoint() {
         int dim = mMinCorner.length;
@@ -79,7 +79,7 @@ public class IntegerHyperRect implements Cloneable {
      * Returns the index of the dimension having the smallest difference
      * between the minimum vertex and maximum vertex point.
      * 
-     * @return
+     * @return the dimension with the smallest distance between the minimum and the maximum.
      */
     public int dimensionOfMinWidth() {
         int dim = mMinCorner.length;
@@ -101,7 +101,7 @@ public class IntegerHyperRect implements Cloneable {
      * Returns the index of the dimension having the largest difference
      * between the minimum vertex and maximum vertex point.
      * 
-     * @return
+     * @return the dimension with the greatest difference between the minimum and the maximum.
      */
     public int dimensionOfMaxWidth() {
         int dim = mMinCorner.length;
@@ -128,7 +128,7 @@ public class IntegerHyperRect implements Cloneable {
      * @throws IllegalArgumentException - if the value is greater than
      *   the corresponding maximum vertex element.
      */
-    public void setMinCornerCoord(int n, int value) {
+    public void setMinCornerCoord(final int n, final int value) {
         if (value <= mMaxCorner[n]) {
             mMinCorner[n] = value;
         } else {
@@ -140,7 +140,7 @@ public class IntegerHyperRect implements Cloneable {
     /**
      * Returns the element of the minimum vertex point for the specified dimension.
      * @param n - the index of the dimension.
-     * @return
+     * @return the value of the minimum for the specified dimension.
      */
     public int getMinCornerCoord(int n) {
         return mMinCorner[n];
@@ -155,7 +155,7 @@ public class IntegerHyperRect implements Cloneable {
      * @throws IllegalArgumentException - if the value is less than
      *   the corresponding maximum vertex element.
      */
-    public void setMaxCornerCoord(int n, int value) {
+    public void setMaxCornerCoord(final int n, final int value) {
         if (value >= mMinCorner[n]) {
             mMaxCorner[n] = value;
         } else {
@@ -167,12 +167,16 @@ public class IntegerHyperRect implements Cloneable {
     /**
      * Returns the element of the maximum vertex point for the specified dimension.
      * @param n - the index of the dimension.
-     * @return
+     * @return the value for the maximum corner for the specified dimension.
      */
     public int getMaxCornerCoord(int n) {
         return mMaxCorner[n];
     }
 
+    /**
+     * Creates a deep copy of the object.
+     * @return a deep copy.
+     */
     public Object clone() {
         return new IntegerHyperRect(mMinCorner, mMaxCorner);
     }
@@ -182,8 +186,8 @@ public class IntegerHyperRect implements Cloneable {
      * the hyper-rectangle to the specified point. If the point is
      * within the rectangle, a clone of the point itself is returned.
      * 
-     * @param point
-     * @return
+     * @param point the search point.
+     * @return an array defining the closest point in the hyperrect to the search point.
      */
     public int[] closestPoint(int[] point) {
         int dim = point.length;
@@ -206,8 +210,8 @@ public class IntegerHyperRect implements Cloneable {
      * Returns true if the specified point is contained within or
      * on the surface of the hyper-rectangle.
      * 
-     * @param point
-     * @return
+     * @param point a search point
+     * @return true if the point is contained within the hyperect, false otherwise.
      */
     public boolean contains(int[] point) {
         int dim = point.length;
@@ -223,7 +227,7 @@ public class IntegerHyperRect implements Cloneable {
 
     /**
      * Returns the dimensionality of the hyper-rectangle.
-     * @return
+     * @return the dimensionality.
      */
     public int getDimension() {
         return mMinCorner.length;
@@ -234,8 +238,8 @@ public class IntegerHyperRect implements Cloneable {
      * The elements of the minimum vertex are all set to Double.NEGATIVE_INFINITY
      * and all element of the maximum vertex are set to Double.POSITIVE_INFINITY.
      * 
-     * @param dim
-     * @return
+     * @param dim the number of dimensions.
+     * @return an <code>IntegerHyperRect</code> of infinite extent in all dimensions.
      */
     public static IntegerHyperRect infiniteHyperRect(int dim) {
         IntegerHyperRect hrect = new IntegerHyperRect(dim);
@@ -247,7 +251,7 @@ public class IntegerHyperRect implements Cloneable {
     /**
      * Returns the intersection of this hyper-rectangle with another,
      * if the two hyper-rectangles intersect.
-     * @param other 
+     * @param other another hyperrect
      * @return - the intersection, or null if the hyper-rectangles do not intersect.
      */
     public IntegerHyperRect intersectionWith(IntegerHyperRect other) {
@@ -268,8 +272,8 @@ public class IntegerHyperRect implements Cloneable {
 
     /**
      * Returns true if this hyper-rectangle intersects with the other.
-     * @param other
-     * @return
+     * @param other another hyperrect.
+     * @return true if the hyperrects intersect, false otherwise.
      */
     public boolean intersectsWith(IntegerHyperRect other) {
         int dim = other.getDimension();
@@ -286,7 +290,7 @@ public class IntegerHyperRect implements Cloneable {
     /**
      * Returns the volume of the hyper-rectangle.  The volume is the product
      * of all the dimension widths.
-     * @return
+     * @return the volume of the hyperect.
      */
     public int volume() {
         int v = 0;

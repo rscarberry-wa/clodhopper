@@ -3,11 +3,8 @@ package org.battelle.clodhopper.examples.kmeans;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import javax.swing.*;
 
@@ -31,7 +28,6 @@ import org.battelle.clodhopper.task.TaskEvent;
 import org.battelle.clodhopper.task.TaskListener;
 import org.battelle.clodhopper.task.TaskOutcome;
 import org.battelle.clodhopper.tuple.ArrayTupleList;
-import org.battelle.clodhopper.tuple.TupleIO;
 import org.battelle.clodhopper.tuple.TupleList;
 import org.battelle.clodhopper.util.IntIterator;
 
@@ -361,8 +357,9 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
     /**
      * Displays an error dialog stating that insufficient memory is
      * available.
+     * @param message the message to display.
      */
-    private void displayInsufficientMemoryDialog(String message) {
+    private void displayInsufficientMemoryDialog(final String message) {
 
         String dlgMessage = null;
         if (message != null && message.length() > 0) {
@@ -381,8 +378,12 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
 
     /**
      * Method for validating entries typed into text fields.
+     * @param tf the text field to validate.
+     * @param min the minimum value.
+     * @param max the maximum value.
+     * @return the entered value.
      */
-    private static int getEnteredValue(JTextField tf, int min, int max) {
+    private static int getEnteredValue(final JTextField tf, final int min, final int max) {
         int value = 0;
         String s = tf.getText().trim();
         if (s.length() == 0) {
@@ -402,8 +403,12 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
 
     /**
      * Method for validating entries typed into text fields.
+     * @param tf the text field to validate.
+     * @param min the minimum value.
+     * @param max the maximum value.
+     * @return the entered value.
      */
-    private static long getEnteredValue(JTextField tf, long min, long max) {
+    private static long getEnteredValue(final JTextField tf, final long min, final long max) {
         long value = 0L;
         String s = tf.getText().trim();
         if (s.length() == 0) {
@@ -423,8 +428,12 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
 
     /**
      * Method for validating entries typed into text fields.
+     * @param tf the text field to validate.
+     * @param min the minimum value.
+     * @param max the maximum value.
+     * @return the entered value.
      */
-    private static double getEnteredValue(JTextField tf, double min, double max) {
+    private static double getEnteredValue(final JTextField tf, final double min, final double max) {
         double value = 0;
         String s = tf.getText().trim();
         if (s.length() == 0) {

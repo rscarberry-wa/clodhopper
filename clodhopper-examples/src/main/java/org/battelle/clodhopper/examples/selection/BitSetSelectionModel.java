@@ -20,7 +20,7 @@ import org.battelle.clodhopper.util.IntervalIntIterator;
  * posted to all registered listeners.  Listeners that respond to the event
  * asynchronously should use a clone of the <code>IntIterator</code> passed
  * in the event.  The <code>IntIterator</code> implementations are
- * generally not thread-safe.</code>
+ * generally not thread-safe.</p>
  * 
  * @author R.Scarberry
  *
@@ -60,9 +60,9 @@ public class BitSetSelectionModel implements SelectionModel {
      * Adds a listener to be notified each time
      * a change to the selection occurs.
      * 
-     * @param listener
+     * @param listener a listener for selections
      */
-    public void addSelectionListener(SelectionListener listener) {
+    public void addSelectionListener(final SelectionListener listener) {
         synchronized (listeners) {
             if (!listeners.contains(listener)) {
                 listeners.add(listener);
@@ -73,8 +73,9 @@ public class BitSetSelectionModel implements SelectionModel {
 
     /**
      * Clears the entire selection.  Posts a single event to all registered listeners.
+     * @param requester entity requesting the operation.
      */
-    public void clearSelected(Object requester) {
+    public void clearSelected(final Object requester) {
         IntIterator it = null;
         synchronized (selectionBits) {
             // Clone the bit vector before clearing the bits, so the clone can be used in the iterator.
@@ -88,7 +89,7 @@ public class BitSetSelectionModel implements SelectionModel {
     /**
      * Get the number of indexes for which selection states are being maintained.
      * 
-     * @return
+     * @return the number of indexes.
      */
     public int getIndexCount() {
         return selectionBits.size();
@@ -97,7 +98,7 @@ public class BitSetSelectionModel implements SelectionModel {
     /**
      * Returns an iterator containing all selected indexes.
      * 
-     * @return
+     * @return an iterator over the indexes of the selected items.
      */
     public IntIterator getSelected() {
         synchronized (selectionBits) {
@@ -109,7 +110,7 @@ public class BitSetSelectionModel implements SelectionModel {
     /**
      * Get the number of selected indexes.
      * 
-     * @return
+     * @return the number of items selected.
      */
     public int getSelectedCount() {
         synchronized (selectionBits) {
@@ -120,7 +121,7 @@ public class BitSetSelectionModel implements SelectionModel {
     /**
      * Returns an iterator containing all unselected indexes.
      * 
-     * @return
+     * @return an iterator over the indexes of the unselected items.
      */
     public IntIterator getUnselected() {
         synchronized (selectionBits) {
@@ -132,7 +133,7 @@ public class BitSetSelectionModel implements SelectionModel {
     /**
      * Returns true if the selections are undergoing a series of changes.
      * 
-     * @return
+     * @return true if the selection is undergoing change, false otherwise.
      */
     public boolean getValueIsAdjusting() {
         return adjusting;
@@ -140,10 +141,10 @@ public class BitSetSelectionModel implements SelectionModel {
 
     /**
      * Returns true if the specified index is in the selected set.
-     * @param index
-     * @return
+     * @param index the item to check.
+     * @return true if the item is selected, false otherwise.
      */
-    public boolean isSelected(int index) {
+    public boolean isSelected(final int index) {
         synchronized (selectionBits) {
             return selectionBits.get(index);
         }
@@ -153,9 +154,9 @@ public class BitSetSelectionModel implements SelectionModel {
      * Removes a listener from the collection that is notified each time
      * a change to the selection occurs.
      * 
-     * @param listener
+     * @param listener the listener to remove.
      */
-    public void removeSelectionListener(SelectionListener listener) {
+    public void removeSelectionListener(final SelectionListener listener) {
         synchronized (listeners) {
             listeners.remove(listener);
             listenerArray = null;
@@ -178,9 +179,10 @@ public class BitSetSelectionModel implements SelectionModel {
      * of calls to this method.  It is much more efficent to call
      * <code>select(IntIterator it)</code></p>
      * 
-     * @param index
+     * @param requester entity requesting the selection.
+     * @param index identifies the item to select.
      */
-    public void select(Object requester, int index) {
+    public void select(final Object requester, final int index) {
         IntIterator it = null;
         synchronized (selectionBits) {
             selectionBits.set(index);
@@ -194,9 +196,10 @@ public class BitSetSelectionModel implements SelectionModel {
      * Select the indexes contained in the specified iterator.  The selection state
      * of other indexes is not affected.
      * 
-     * @param it
+     * @param requester entity requesting the selection.
+     * @param it identifies the times to select.
      */
-    public void select(Object requester, IntIterator it) {
+    public void select(final Object requester, final IntIterator it) {
         synchronized (selectionBits) {
             it.gotoFirst();
             while (it.hasNext()) {
@@ -209,8 +212,10 @@ public class BitSetSelectionModel implements SelectionModel {
 
     /**
      * Select all indexes.
+     * 
+     * @param requester entity requesting the selection.
      */
-    public void selectAll(Object requester) {
+    public void selectAll(final Object requester) {
         synchronized (selectionBits) {
             int sz = selectionBits.size();
             for (int i = 0; i < sz; i++) {
@@ -229,9 +234,10 @@ public class BitSetSelectionModel implements SelectionModel {
      * <p>This method propagates one <code>SelectionEvent</code> to registered 
      * listeners.</p>
      * 
-     * @param it iterator containing the indexes to be selected.
+     * @param requester entity requesting the selection.
+     * @param it identifies the times to select.
      */
-    public void setSelected(Object requester, IntIterator it) {
+    public void setSelected(final Object requester, final IntIterator it) {
         if (it.getSize() == 0) {
             clearSelected(requester);
         } else {
@@ -268,9 +274,9 @@ public class BitSetSelectionModel implements SelectionModel {
      * in the series of changes should be propagated after the flag is set back to false, so 
      * listeners can do a full update. 
      * 
-     * @param adjusting
+     * @param adjusting boolean value to set.
      */
-    public void setValueIsAdjusting(boolean adjusting) {
+    public void setValueIsAdjusting(final boolean adjusting) {
         this.adjusting = adjusting;
     }
 
@@ -281,9 +287,10 @@ public class BitSetSelectionModel implements SelectionModel {
      * of calls to this method.  It is much more efficient to call
      * <code>unselect(IntIterator it)</code></p>
      * 
-     * @param index
+     * @param requester entity requesting the selection change.
+     * @param index identifies the item to unselect.
      */
-    public void unselect(Object requester, int index) {
+    public void unselect(final Object requester, final int index) {
         IntIterator it = null;
         synchronized (selectionBits) {
             selectionBits.clear(index);
@@ -297,9 +304,10 @@ public class BitSetSelectionModel implements SelectionModel {
      * Unselect the indexes contained in the specified iterator.  The selection state
      * of other indexes is not affected.
      * 
-     * @param it
+     * @param requester entity requesting the selection change.
+     * @param it identifies the item to unselect.
      */
-    public void unselect(Object requester, IntIterator it) {
+    public void unselect(final Object requester, final IntIterator it) {
         synchronized (selectionBits) {
             it.gotoFirst();
             while (it.hasNext()) {

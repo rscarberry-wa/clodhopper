@@ -27,9 +27,9 @@ public class SimpleXMeansDemo {
    * A simple method for computing clusters for an array of data using the default
    * xmeans parameters.
    * 
-   * @param data
-   * @param tupleLength
-   * @param tupleCount
+   * @param data the data to be clustered.
+   * @param tupleLength the length of the tuples.
+   * @param tupleCount the number of tuples.
    * @return
    */
   public static List<Cluster> simpleClusterWithXMeans(double[] data, int tupleLength, int tupleCount) {

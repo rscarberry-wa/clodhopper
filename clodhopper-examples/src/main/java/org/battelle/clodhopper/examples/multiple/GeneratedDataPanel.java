@@ -432,8 +432,9 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 
 	/**
 	 * Displays an error dialog stating that insufficient memory is available.
+         * @param message the message to display.
 	 */
-	private void displayInsufficientMemoryDialog(String message) {
+	private void displayInsufficientMemoryDialog(final String message) {
 
 		String dlgMessage = null;
 		if (message != null && message.length() > 0) {
@@ -452,8 +453,12 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 
 	/**
 	 * Method for validating entries typed into text fields.
+         * @param tf the textfield to validate.
+         * @param min the minimum value.
+         * @param max the maximum value.
+         * @return the entered value.
 	 */
-	private static int getEnteredValue(JTextField tf, int min, int max) {
+	private static int getEnteredValue(final JTextField tf, final int min, final int max) {
 		int value = 0;
 		String s = tf.getText().trim();
 		if (s.length() == 0) {
@@ -473,8 +478,12 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 
 	/**
 	 * Method for validating entries typed into text fields.
+         * @param tf the textfield to validate.
+         * @param min the minimum value.
+         * @param max the maximum value.
+         * @return the entered value.
 	 */
-	private static long getEnteredValue(JTextField tf, long min, long max) {
+	private static long getEnteredValue(final JTextField tf, final long min, final long max) {
 		long value = 0L;
 		String s = tf.getText().trim();
 		if (s.length() == 0) {
@@ -494,8 +503,12 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 
 	/**
 	 * Method for validating entries typed into text fields.
+         * @param tf the textfield to validate.
+         * @param min the minimum value.
+         * @param max the maximum value.
+         * @return the entered value.
 	 */
-	private static double getEnteredValue(JTextField tf, double min, double max) {
+	private static double getEnteredValue(final JTextField tf, final double min, final double max) {
 		double value = 0;
 		String s = tf.getText().trim();
 		if (s.length() == 0) {
@@ -621,11 +634,19 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 		return result;
 	}
 
+        /**
+         * {@inheritDoc }
+         */
+        @Override
 	public void taskBegun(TaskEvent e) {
 		mStartTime = System.currentTimeMillis();
 		displayText("\n" + e.getMessage() + "\n");
 	}
 
+        /**
+         * {@inheritDoc }
+         */
+        @Override
 	public void taskEnded(TaskEvent e) {
 
 		long totalMS = System.currentTimeMillis() - mStartTime;
@@ -737,20 +758,34 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 		task.removeTaskListener(this);
 	}
 
+        /**
+         * {@inheritDoc }
+         */
+        @Override
 	public void taskMessage(TaskEvent e) {
 		displayText(e.getMessage());
 	}
 
+        /**
+         * {@inheritDoc }
+         */
+        @Override
 	public void taskProgress(TaskEvent e) {
 		setProgress(e.getProgress());
 	}
 
-	@Override
+        /**
+         * {@inheritDoc }
+         */
+        @Override
 	public void taskPaused(TaskEvent e) {
 		displayText(e.getMessage());
 	}
 
-	@Override
+        /**
+         * {@inheritDoc }
+         */
+        @Override
 	public void taskResumed(TaskEvent e) {
 		displayText(e.getMessage());
 	}
@@ -790,9 +825,6 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 		}
 	}
 
-	/**
-	 * @param args
-	 */
 	public static void main(String[] args) {
 		try {
 			SwingUtilities.invokeAndWait(new Runnable() {

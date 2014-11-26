@@ -954,9 +954,6 @@ public class ClodHopperUI extends JFrame implements SelectionListener {
 
 	}
 
-	/**
-	 * @param args
-	 */
 	public static void main(String[] args) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {

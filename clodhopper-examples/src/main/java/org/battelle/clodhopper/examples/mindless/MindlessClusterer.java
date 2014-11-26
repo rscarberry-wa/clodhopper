@@ -24,17 +24,17 @@ import org.battelle.clodhopper.util.ArrayIntIterator;
  */
 public class MindlessClusterer extends AbstractClusterer {
 
-  private TupleList tuples;
-  private MindlessParams params;
+  private final TupleList tuples;
+  private final MindlessParams params;
   
   /**
    * Constructor which expects a TupleList and a parameters object the
    * same as the rest of the clusterers.
    * 
-   * @param tuples
-   * @param params
+   * @param tuples the tuple to cluster.
+   * @param params contains the clustering parameters.
    */
-  public MindlessClusterer(TupleList tuples, MindlessParams params) {
+  public MindlessClusterer(final TupleList tuples, final MindlessParams params) {
     if (tuples == null || params == null) {
       throw new NullPointerException();
     }
@@ -44,6 +44,7 @@ public class MindlessClusterer extends AbstractClusterer {
   
   /**
    * All tasks must provide this method.
+   * @return a string describing the method of clustering.
    */
   @Override
   public String taskName() {
@@ -53,6 +54,7 @@ public class MindlessClusterer extends AbstractClusterer {
   /**
    * All extensions of AbstractTask must provide this method
    * which is called from AbstractTask's final run method.
+   * @return a list of clusters.
    */
   @Override
   protected List<Cluster> doTask() throws Exception {
@@ -118,7 +120,7 @@ public class MindlessClusterer extends AbstractClusterer {
     }
     
     // Instantiate the list.
-    clusters = new ArrayList<Cluster>();
+    clusters = new ArrayList<>();
     
     // Transform the TIntArrayLists to actual clusters, but only if they 
     // are not empty. (If clusterCount is near TupleCount, it is quite possible for

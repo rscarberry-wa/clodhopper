@@ -66,14 +66,14 @@ public final class UIUtils {
 	 * is empty or cannot be parsed into an integer, this method throws an IllegalArgumentException
 	 * containing an appropriate message.
 	 * 
-	 * @param textComponent
+	 * @param textComponent the text component from which to extract the value.
 	 * @param name a name for the value to be parsed.  This is used in constructing an information error message.
-	 * @param minimum
-	 * @param maximum
-	 * @param minInclusive
-	 * @param maxInclusive
-	 * @return
-	 * @throws IllegalArgumentException
+	 * @param minimum the minimum value allowed.
+	 * @param maximum the maximum value allowed.
+	 * @param minInclusive whether the minimum is inclusive.
+	 * @param maxInclusive whether the maximum is inclusive.
+	 * @return the entered value.
+	 * @throws IllegalArgumentException if the conditions are not met.
 	 */
 	public static int extractInt(JTextComponent textComponent, String name, int minimum, int maximum, boolean minInclusive, boolean maxInclusive) 
 		throws IllegalArgumentException {
@@ -141,12 +141,12 @@ public final class UIUtils {
 	 * the error message to the list.  Callers should check the size of the list after the call to determine
 	 * whether the value was parsed successfully.
 	 * 
-	 * @param textComponent
-	 * @param name
-	 * @param minimum
-	 * @param maximum
-	 * @param errorMessages
-	 * @return
+	 * @param textComponent the text component from which to extract the value.
+	 * @param name the name for the value being extracted.
+	 * @param minimum the minimum value allowed.
+	 * @param maximum the maximum value allowed.
+	 * @param errorMessages list into which to copy error messages if conditions are not met.
+	 * @return the entered value.
 	 */
 	public static int extractInt(JTextComponent textComponent, String name, int minimum, int maximum, List<String> errorMessages) {
 		try {
@@ -163,13 +163,13 @@ public final class UIUtils {
 	 * If not, or if the text cannot be parsed into an integer, this method throws an IllegalArgumentException
 	 * containing an appropriate message.
 	 * 
-	 * @param textComponent
+	 * @param textComponent the text component from which to extract the value.
 	 * @param name a name for the value to be parsed.  This is used in constructing an information error message.
-	 * @param minimum
-	 * @param maximum
+	 * @param minimum the minimum value allowed.
+	 * @param maximum the maximum value allowed.
 	 * @param defaultIfBlank the value to return if the text in the component is empty or all whitespace.
-	 * @return
-	 * @throws IllegalArgumentException
+	 * @return the entered value.
+	 * @throws IllegalArgumentException if boundary conditions are not met.
 	 */
 	public static int extractInt(JTextComponent textComponent, String name, int minimum, int maximum, int defaultIfBlank)
 		throws IllegalArgumentException {
@@ -188,12 +188,12 @@ public final class UIUtils {
 	 * is empty or cannot be parsed into an integer, this method throws an IllegalArgumentException
 	 * containing an appropriate message.
 	 * 
-	 * @param textComponent
+	 * @param textComponent the text component from which to extract the value.
 	 * @param name a name for the value to be parsed.  This is used in constructing an information error message.
-	 * @param minimum
-	 * @param maximum
-	 * @return
-	 * @throws IllegalArgumentException
+	 * @param minimum the minimum value allowed.
+	 * @param maximum the maximum value allowed.
+	 * @return the entered value.
+	 * @throws IllegalArgumentException if boundary conditions are not met.
 	 */
 	public static long extractLong(JTextComponent textComponent, String name, long minimum, long maximum) 
 		throws IllegalArgumentException {
@@ -227,6 +227,19 @@ public final class UIUtils {
 		throw new IllegalArgumentException(message);
 	}
 	
+	/**
+	 * Parses an long value from the text present in a text component.  It also ensures the value
+	 * falls between the specified minimum and maximum, inclusive of both.  If not, or if the text
+	 * is empty or cannot be parsed into an integer, this method throws an IllegalArgumentException
+	 * containing an appropriate message.
+	 * 
+	 * @param textComponent the text component from which to extract the value.
+	 * @param name a name for the value to be parsed.  This is used in constructing an information error message.
+	 * @param minimum the minimum value allowed.
+	 * @param maximum the maximum value allowed.
+         * @param errorMessages a list for collecting error messages if conditions are not met.
+	 * @return the entered value.
+	 */
 	public static long extractLong(JTextComponent textComponent, String name, long minimum, long maximum, 
 			List<String> errorMessages) {
 		try {
@@ -243,13 +256,13 @@ public final class UIUtils {
 	 * If not, or if the text cannot be parsed into a long, this method throws an IllegalArgumentException
 	 * containing an appropriate message.
 	 * 
-	 * @param textComponent
+	 * @param textComponent the text component from which to extract the value.
 	 * @param name a name for the value to be parsed.  This is used in constructing an information error message.
-	 * @param minimum
-	 * @param maximum
+	 * @param minimum the minimum value allowed.
+	 * @param maximum the maximum value allowed.
 	 * @param defaultIfBlank the value to return if the text in the component is empty or all whitespace.
-	 * @return
-	 * @throws IllegalArgumentException
+	 * @return the entered value.
+	 * @throws IllegalArgumentException if boundary conditions are not met.
 	 */
 	public static long extractLong(JTextComponent textComponent, String name, 
 			long minimum, long maximum, long defaultIfBlank)
@@ -263,6 +276,20 @@ public final class UIUtils {
 		return defaultIfBlank;
 	}
 	
+	/**
+	 * Parses a long value from the text present in a text component if the text is not blank.  
+	 * It also ensures the value falls between the specified minimum and maximum, inclusive of both.
+         * If the field is blank, a default value is used instead. If exceptions are thrown, their messages are
+         * collected in a list.
+	 * 
+	 * @param textComponent the text component from which to extract the value.
+	 * @param name a name for the value to be parsed.  This is used in constructing an information error message.
+	 * @param minimum the minimum value allowed.
+	 * @param maximum the maximum value allowed.
+	 * @param defaultIfBlank the value to return if the text in the component is empty or all whitespace.
+         * @param errorMessages list for collecting validation error messages.
+	 * @return the entered value.
+	 */
 	public static long extractLong(JTextComponent textComponent, String name, 
 			long minimum, long maximum, long defaultIfBlank, List<String> errorMessages)
 		throws IllegalArgumentException {
@@ -282,12 +309,14 @@ public final class UIUtils {
 	 * is empty or cannot be parsed into a double, this method throws an IllegalArgumentException
 	 * containing an appropriate message.
 	 * 
-	 * @param textComponent
+	 * @param textComponent the text component from which to extract the value.
 	 * @param name a name for the value to be parsed.  This is used in constructing an information error message.
-	 * @param minimum
-	 * @param maximum
-	 * @return
-	 * @throws IllegalArgumentException
+	 * @param minimum the minimum value allowed.
+	 * @param maximum the maximum value allowed.
+         * @param minInclusive whether of not the minimum is inclusive.
+         * @param maxInclusive whether or not the maximum is inclusive.
+	 * @return the entered value.
+	 * @throws IllegalArgumentException if boundary conditions are not met.
 	 */
 	public static double extractDouble(JTextComponent textComponent, String name, 
 			double minimum, double maximum, boolean minInclusive, boolean maxInclusive) 
@@ -330,12 +359,14 @@ public final class UIUtils {
 	 * the error message to the list.  Callers should check the size of the list after the call to determine
 	 * whether the value was parsed successfully.
 	 * 
-	 * @param textComponent
-	 * @param name
-	 * @param minimum
-	 * @param maximum
-	 * @param errorMessages
-	 * @return
+	 * @param textComponent the text component from which to extract the value.
+	 * @param name a name for the value to be parsed.  This is used in constructing an information error message.
+	 * @param minimum the minimum value allowed.
+	 * @param maximum the maximum value allowed.
+         * @param minInclusive whether the minimum value is inclusive.
+         * @param maxInclusive whether the maximum value is inclusive.
+         * @param errorMessages list for collecting validation error messages.
+	 * @return the entered value.
 	 */
 	public static double extractDouble(JTextComponent textComponent, String name, 
 			double minimum, double maximum, boolean minInclusive, boolean maxInclusive, List<String> errorMessages) {
@@ -347,12 +378,23 @@ public final class UIUtils {
 		return 0;
 	}
 
+        /**
+         * Displays an error dialog.
+         * @param comp parent component of the dialog.
+         * @param title the title.
+         * @param errorMessages messages displayed in the dialog.
+         */
 	public static void displayErrorDialog(Component comp, String title, List<String> errorMessages) {
 		JOptionPane.showMessageDialog(comp, 
 				constructMultilineHTMLMessage(errorMessages), 
 				title, JOptionPane.ERROR_MESSAGE);
 	}
 	
+        /**
+         * Constructs a multiple line HTML message from a list of messages.
+         * @param messages the list of messages.
+         * @return an HTML message.
+         */
 	public static String constructMultilineHTMLMessage(List<String> messages) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("<html>");

@@ -40,7 +40,7 @@ public class SelectionEvent extends java.util.EventObject {
      * Returns the requester, which is the entity which made the call that changed the
      * selection and triggered the event.  This object can be null.
      * 
-     * @return
+     * @return a reference to the requesting entity.
      */
     public Object getRequester() {
         return requester;
@@ -50,7 +50,7 @@ public class SelectionEvent extends java.util.EventObject {
      * Returns the iterator containing the indexes of the entities whose selection
      * state has changed.
      * 
-     * @return
+     * @return an iterator over the indexes of the items.
      */
     public IntIterator getIntIterator() { return it; }
     
@@ -59,7 +59,7 @@ public class SelectionEvent extends java.util.EventObject {
      * the iterator returned by <code>getIntIterator()</code> contains the indexes of those 
      * entities that have been selected along with those that have been deselected.
      * 
-     * @return
+     * @return the type of the selection.
      */
     public SelectionType getSelectType() { 
     	return selectionType; 
@@ -68,7 +68,7 @@ public class SelectionEvent extends java.util.EventObject {
     /**
      * Returns whether or not the selections are still in the process of being changed.
      * 
-     * @return
+     * @return true or false.
      */
     public boolean isAdjusting() { 
     	return adjusting; 

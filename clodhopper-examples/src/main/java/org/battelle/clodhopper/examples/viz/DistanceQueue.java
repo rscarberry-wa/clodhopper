@@ -2,6 +2,7 @@ package org.battelle.clodhopper.examples.viz;
 
 import java.util.*;
 import gnu.trove.set.hash.*;
+import java.io.IOException;
 
 /**
  * <p>Title: DistanceQueue</p>
@@ -69,7 +70,7 @@ public final class DistanceQueue implements java.io.Serializable {
      * Add an id associating with it the given distance.
      * @param id the id to be added.
      * @param distance the distance to associate with the id.
-     * @throws IllegalArgumentException if distance > max distance allowed.
+     * @throws IllegalArgumentException if distance &gt; max distance allowed.
      */
     public void add(int id, double distance) {
         
@@ -250,13 +251,13 @@ public final class DistanceQueue implements java.io.Serializable {
     /**
      * Save the state of the <tt>DistanceQueue</tt> instance to a stream (that
      * is, serialize it).
-     *
-     * @serialData The length of the array backing the <tt>DistanceQueue</tt>
-     *             instance is emitted (int), followed by all of its elements
-     *             in the proper order.
+     * 
+     * @param s the stream to which to write the data.
+     * @throws IOException if an IO error occurs.
      */
-    private void writeObject(java.io.ObjectOutputStream s)
-            throws java.io.IOException {
+    private void writeObject(final java.io.ObjectOutputStream s)
+            throws IOException {
+        
         // Read in mCount, mSNCounter, etc.
         s.defaultWriteObject();
         
@@ -275,9 +276,14 @@ public final class DistanceQueue implements java.io.Serializable {
     /**
      * Reconstitute the <tt>DistanceQueue</tt> instance from a stream (that is,
      * deserialize it).
+     * 
+     * @param s the stream from which to read the data.
+     * 
+     * @throws IOException if an IO error occurs.
+     * @throws ClassNotFoundException if the class of the object cannot be loaded.
      */
-    private void readObject(java.io.ObjectInputStream s)
-            throws java.io.IOException, ClassNotFoundException {
+    private void readObject(final java.io.ObjectInputStream s)
+            throws IOException, ClassNotFoundException {
         // Read in mCount, mSNCounter, etc.
         s.defaultReadObject();
         // Read in array length and allocate array
