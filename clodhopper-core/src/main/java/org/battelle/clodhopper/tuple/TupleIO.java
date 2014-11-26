@@ -212,7 +212,7 @@ public class TupleIO {
 
         try {
 
-            br = new BufferedReader(new InputStreamReader(new FileInputStream(file), charSet));
+            br = new BufferedReader(new InputStreamReader(new FileInputStream(file), cs));
             String line;
             int lineNum = -1;
             int row = 0;
