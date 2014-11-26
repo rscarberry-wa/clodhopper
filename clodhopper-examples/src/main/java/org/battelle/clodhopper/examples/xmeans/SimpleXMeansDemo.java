@@ -30,7 +30,7 @@ public class SimpleXMeansDemo {
    * @param data the data to be clustered.
    * @param tupleLength the length of the tuples.
    * @param tupleCount the number of tuples.
-   * @return
+   * @return a list of clusters.
    */
   public static List<Cluster> simpleClusterWithXMeans(double[] data, int tupleLength, int tupleCount) {
     
