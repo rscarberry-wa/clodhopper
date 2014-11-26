@@ -281,7 +281,7 @@ public class JarvisPatrickClusterer extends AbstractClusterer {
     // A KD-Tree provides an efficient way of quickly looking up nearest
     // neighbors. Even for tuple lists with millions of members, this call
     // typically takes under a second.
-    TupleKDTree kdTree = TupleKDTree.forTupleList(tuples, params.getDistanceMetric());
+    TupleKDTree kdTree = TupleKDTree.forTupleListBalanced(tuples, params.getDistanceMetric());
     
     // Compute the nearest neighbors concurrently.
     final int workerCount = params.getWorkerThreadCount();
