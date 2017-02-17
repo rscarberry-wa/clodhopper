@@ -27,8 +27,11 @@ import java.util.List;
  * permissions and limitations under the License.
  * 
  * -------------------------------------------------------------------- 
- * *
+ *
  * AbstractClusterSplitter.java
+ *
+ * Implements all methods of <code>ClusterSplitter</code> except 
+ * <code>performSplit()</code>. 
  *
  *===================================================================*/
 public abstract class AbstractClusterSplitter implements ClusterSplitter {

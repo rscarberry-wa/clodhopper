@@ -1,7 +1,6 @@
 package org.battelle.clodhopper;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
 import org.battelle.clodhopper.util.ArrayIntIterator;
@@ -136,6 +135,7 @@ public class Cluster {
      *
      * @return the hash code for the cluster instance.
      */
+    @Override
     public int hashCode() {
         return 31 * Arrays.hashCode(ids) + Arrays.hashCode(center);
     }
@@ -149,6 +149,7 @@ public class Cluster {
      *
      * @return true if equal, false otherwise.
      */
+    @Override
     public boolean equals(Object o) {
         if (o == this) {
             return true;

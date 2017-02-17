@@ -112,58 +112,52 @@ public final class ClusterStats {
 
         double bic = 0.0;
 
-        int K = clusters.size();
+        // Get the number of clusters and the dimensionality.
+        final int K = clusters.size();
+        // Get the dimensionality
+        final int M = tuples.getTupleLength();
 
         if (K > 0) {
+            
+            // Sum of the member counts.
+            final int R = clusters.stream().mapToInt(c -> c.getMemberCount()).sum();
 
-            // Get the total number of coordinates in the clusters.
-            // Don't assume that it's the same as the number of coordinates
-            // in the coordinate set. The cluster set might contain a subset
-            // of the coordinates.
-            int R = 0;
-            for (int i = 0; i < K; i++) {
-                R += clusters.get(i).getMemberCount();
-            }
+            final double logR = Math.log(R);
+                   
+            final double LSum = clusters.stream().mapToDouble(c -> {
+                
+                int R_n = c.getMemberCount();
 
-            // Get the dimensionality
-            int M = tuples.getTupleLength();
-
-            double LSum = 0;
-
-            // For each cluster
-            for (int i = 0; i < K; i++) {
-
-                Cluster cluster = clusters.get(i);
-                int R_n = cluster.getMemberCount();
-
+                double L = 0.0;
+                
 		// If R_n < K, sigma2 will be < 0, which will make L NaN, because of 
                 // Math.log(sigma2).
                 //
                 if (R_n > K) {
 
                     // Estimate variance
-                    double sigma2 = computeDistortion(tuples, cluster);
+                    double sigma2 = computeDistortion(tuples, c);
                     if (sigma2 > 0) {
                         sigma2 /= (R_n - K);
                     }
 
                     // Estimate log-likelihood
-                    double L = -R_n / 2 * LOG2PI - (R_n * M / 2) * Math.log(sigma2)
+                    L = -R_n / 2 * LOG2PI - (R_n * M / 2) * Math.log(sigma2)
                             - (R_n - K) / 2 + R_n * Math.log(R_n) - R_n
-                            * Math.log(R);
-
-                    LSum += L;
+                            * logR;
                 }
-            }
+                
+                return L;
+                    
+            }).sum();
 
             // Count the parameters in the model
             double p = K * (M + 1);
             // Compute the criterion
-            bic = LSum - p / 2 * Math.log(R);
+            bic = LSum - p / 2 * logR;
 
-			// Added this on 3/13/2006 to normalize on cluster size. I don't
-            // think
-            // the paper we got the bic formula from does this. -- R.Scarberry
+	    // Added this on 3/13/2006 to normalize on cluster size. I don't
+            // think the paper we got the bic formula from does this. -- R.Scarberry
             if (R > 0) {
                 bic /= R;
             }
