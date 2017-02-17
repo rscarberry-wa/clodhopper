@@ -105,6 +105,7 @@ public abstract class AbstractTask<V> implements Task<V> {
          * finish events in its run method.)
          * @param l - an object which implements <code>TaskListener</code>.
          */
+        @Override
         public void addTaskListener(TaskListener l) {
         	eventSupport.addTaskListener(l);
         }
@@ -115,6 +116,7 @@ public abstract class AbstractTask<V> implements Task<V> {
          * @param l - a <code>TaskListener</code> previously added via
          * <code>addTaskListener(l)</code>.
          */
+        @Override
         public void removeTaskListener(TaskListener l) {
         	eventSupport.removeTaskListener(l);
         }
@@ -126,8 +128,9 @@ public abstract class AbstractTask<V> implements Task<V> {
          * @param begin - the beginning progress.
          * @param end - the ending progress.
          */
+        @Override
         public void setProgressEndpoints(double begin, double end) {        
-            if (begin < 0.0 || end < 0.0 || (begin > end)) {
+            if (Double.isNaN(begin) || Double.isNaN(end) || begin < 0.0 || (begin > end)) {
                 throw new IllegalArgumentException(
                         "invalid progress endpoints (begin == " + begin
                         + ", end == " + end + ")");
@@ -169,6 +172,7 @@ public abstract class AbstractTask<V> implements Task<V> {
          * @throws InterruptedException - if the current thread was interrupted 
          *   while waiting.
          */
+        @Override
         public V get() throws InterruptedException, ExecutionException {
             while(!hasEnded.get()) {
                 synchronized (this) {
@@ -192,6 +196,7 @@ public abstract class AbstractTask<V> implements Task<V> {
          * @throws InterruptedException - if the current thread was interrupted 
          *   while waiting.
          */
+        @Override
         public V get(long timeout, TimeUnit unit) 
             throws InterruptedException, ExecutionException, TimeoutException {
             long timeLimit = System.currentTimeMillis() + unit.toMillis(timeout);

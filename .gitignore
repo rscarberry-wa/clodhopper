@@ -5,3 +5,4 @@ target/
 .project
 nb-configuration.xml
 
+/clodhopper-core/nbproject/
