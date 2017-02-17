@@ -7,7 +7,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*=====================================================================
  * 
@@ -51,7 +52,7 @@ import org.apache.log4j.Logger;
  */
 public abstract class AbstractTask<V> implements Task<V> {
 	
-        private static final Logger LOGGER = Logger.getLogger(AbstractTask.class);
+        private static final Logger LOGGER = LoggerFactory.getLogger(AbstractTask.class);
         
         // The outcome of the AbstractTask.  Never null, but NOT_FINISHED means what
         // it sounds like.

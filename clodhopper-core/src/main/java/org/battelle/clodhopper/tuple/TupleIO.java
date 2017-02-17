@@ -6,8 +6,9 @@ import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Future;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.apache.log4j.Logger;
 
 /*=====================================================================
  * 
@@ -45,7 +46,7 @@ import org.apache.log4j.Logger;
  */
 public class TupleIO {
 
-    private static final Logger logger = Logger.getLogger(TupleIO.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TupleIO.class);
 
     /**
      * Loads a <code>TupleList</code> from a csv file and adds it to a <code>TupleListFactory</code>
@@ -281,7 +282,7 @@ public class TupleIO {
                 try {
                     br.close();
                 } catch (IOException ioe) {
-                    logger.error(ioe);
+                    LOGGER.error("error closing file: " + file, ioe);
                 }
             }
 
@@ -293,7 +294,7 @@ public class TupleIO {
                         factory.closeTupleList(tuples);
                         factory.deleteTupleList(tuples);
                     } catch (TupleListFactoryException tlfe) {
-                        logger.error(tlfe);
+                        LOGGER.error("error closing tuple list", tlfe);
                     }
                 }
             }

@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.battelle.clodhopper.AbstractClusterSplitter;
 import org.battelle.clodhopper.Cluster;
 import org.battelle.clodhopper.ClusterStats;
@@ -16,6 +15,8 @@ import org.battelle.clodhopper.tuple.ArrayTupleList;
 import org.battelle.clodhopper.tuple.FilteredTupleList;
 import org.battelle.clodhopper.tuple.TupleList;
 import org.battelle.clodhopper.tuple.TupleMath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*=====================================================================
  * 
@@ -54,7 +55,7 @@ import org.battelle.clodhopper.tuple.TupleMath;
  */
 public class GMeansClusterSplitter extends AbstractClusterSplitter {
 
-    private static final Logger logger = Logger.getLogger(GMeansClusterSplitter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GMeansClusterSplitter.class);
 
     private TupleList tuples;
     private GMeansParams params;
@@ -206,7 +207,7 @@ public class GMeansClusterSplitter extends AbstractClusterSplitter {
         try {
             clusters = kmeans.get();
         } catch (Exception e) {
-            logger.error("error splitting cluster", e);
+            LOGGER.error("error splitting cluster", e);
             return null;
         }
 

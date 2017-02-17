@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.battelle.clodhopper.AbstractClusterSplitter;
 import org.battelle.clodhopper.Cluster;
 import org.battelle.clodhopper.ClusterStats;
@@ -13,6 +12,8 @@ import org.battelle.clodhopper.kmeans.KMeansParams;
 import org.battelle.clodhopper.task.TaskOutcome;
 import org.battelle.clodhopper.tuple.FilteredTupleList;
 import org.battelle.clodhopper.tuple.TupleList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*=====================================================================
  * 
@@ -45,7 +46,7 @@ import org.battelle.clodhopper.tuple.TupleList;
 
 public class XMeansClusterSplitter extends AbstractClusterSplitter {
 
-	private static Logger logger = Logger.getLogger(XMeansClusterSplitter.class);
+	private static Logger LOGGER = LoggerFactory.getLogger(XMeansClusterSplitter.class);
 
 	private static final int[] SPLITS_TO_TRY = new int[] {
 		2, 3, 5, 7, 11
@@ -129,7 +130,7 @@ public class XMeansClusterSplitter extends AbstractClusterSplitter {
 
             	} catch (Exception e) {
 
-            		logger.error("problem splitting cluster", e);
+            		LOGGER.error("problem splitting cluster", e);
             		
             	}
             	
@@ -184,11 +185,11 @@ public class XMeansClusterSplitter extends AbstractClusterSplitter {
         	
         } else {
         	
-        	logger.error(String.format("kmeans outcome = %s\n", kmeans.getTaskOutcome()));
+        	LOGGER.error(String.format("kmeans outcome = %s\n", kmeans.getTaskOutcome()));
         	
         	if (kmeans.getTaskOutcome() == TaskOutcome.ERROR) {
         		Throwable t = kmeans.getError(); 
-        		logger.error("kmeans error", t);
+        		LOGGER.error("kmeans error", t);
         	}
         	
         }

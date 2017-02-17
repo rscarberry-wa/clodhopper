@@ -9,8 +9,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*=====================================================================
  * 
@@ -50,7 +50,7 @@ import org.apache.log4j.Logger;
  */
 public class FileMappedTupleList extends AbstractTupleList {
 
-    private static final Logger logger = Logger.getLogger(FileMappedTupleList.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileMappedTupleList.class);
 
     private final File file;
     private RandomAccessFile randomAccessFile;
@@ -170,7 +170,7 @@ public class FileMappedTupleList extends AbstractTupleList {
                 try {
                     out.close();
                 } catch (IOException e) {
-                    logger.error("error closing output stream", e);
+                    LOGGER.error("error closing output stream", e);
                 }
             }
         }
@@ -207,7 +207,7 @@ public class FileMappedTupleList extends AbstractTupleList {
                     try {
                         close();
                     } catch (IOException e) {
-                        logger.error("error closing output stream", e);
+                        LOGGER.error("error closing output stream", e);
                     }
                 }
             }
@@ -244,7 +244,7 @@ public class FileMappedTupleList extends AbstractTupleList {
             ioBuffer.flip();
             randomAccessFile.getChannel().write(ioBuffer);
         } catch (IOException e) {
-            logger.error("error setting tuple values", e);
+            LOGGER.error("error setting tuple values", e);
         }
     }
 
@@ -266,7 +266,7 @@ public class FileMappedTupleList extends AbstractTupleList {
                 result[i] = ioBuffer.getDouble();
             }
         } catch (IOException e) {
-            logger.error("error reading tuple values", e);
+            LOGGER.error("error reading tuple values", e);
         }
         return result;
     }
@@ -283,7 +283,7 @@ public class FileMappedTupleList extends AbstractTupleList {
             randomAccessFile.seek(filePos(n) + 8L * col);
             return randomAccessFile.readDouble();
         } catch (IOException e) {
-            logger.error("error reading tuple value", e);
+            LOGGER.error("error reading tuple value", e);
         }
         return 0.0;
     }
@@ -303,7 +303,7 @@ public class FileMappedTupleList extends AbstractTupleList {
         try {
             close();
         } catch (IOException e) {
-            logger.error("error closing file", e);
+            LOGGER.error("error closing file", e);
         }
     }
 }
