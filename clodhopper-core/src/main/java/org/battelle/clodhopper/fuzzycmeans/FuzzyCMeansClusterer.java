@@ -286,7 +286,6 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
 
         ph.postMessage("initializing cluster centers");
 
-        ClusterSeeder seeder = params.getClusterSeeder();
 
         int clustCount = params.getClusterCount();
 
@@ -302,21 +301,50 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
 
         this.checkForCancel();
 
-        TupleList seeds = seeder.generateSeeds(tuples, clustCount);
+        do {
+            ClusterSeeder seeder = params.getClusterSeeder();
 
-        this.checkForCancel();
+            TupleList seeds = seeder.generateSeeds(tuples, clustCount);
 
-        this.clusterCount = seeds.getTupleCount();
-        this.clusterCenters = new double[this.clusterCount][tuples.getTupleLength()];
+            this.checkForCancel();
 
-        for (int i = 0; i < this.clusterCount; i++) {
-            seeds.getTuple(i, this.clusterCenters[i]);
-        }
+            this.clusterCount = seeds.getTupleCount();
+            this.clusterCenters = new double[this.clusterCount][tuples.getTupleLength()];
+
+            for (int i = 0; i < this.clusterCount; i++) {
+                seeds.getTuple(i, this.clusterCenters[i]);
+            }
+
+        } while (!isSeedsAllUnique(this.clusterCenters, ph));
 
         if (this.clusterCount < clustCount) {
             ph.postMessage("number of clusters reduced to " + this.clusterCount
                     + ", the number of unique tuples");
         }
+    }
+
+    private boolean isSeedsAllUnique(double[][] seeds, ProgressHandler ph) {
+
+        for (int i = 0; i < seeds.length - 1; i++) {
+            for (int j = i + 1; j < seeds.length; j++) {
+
+                boolean identical = true;
+
+                for (int k = 0; k < seeds[i].length; k++) {
+                    identical = identical & (seeds[i][k] == seeds[j][k]);
+                    if (!identical) break;
+                }
+
+                if (identical) {
+                    ph.postMessage("Identical seeds found, regenerate the seeder: " +
+                            Arrays.deepToString(seeds));
+                    params.setClusterSeeder(new FuzzyCMeansParams().getClusterSeeder());
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private void updateDegreesOfMembership() throws Exception {
