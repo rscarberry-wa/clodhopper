@@ -1,7 +1,5 @@
 package org.battelle.clodhopper.distance;
 
-import org.battelle.clodhopper.tuple.TupleMath;
-
 /*=====================================================================
  * 
  *                       CLODHOPPER CLUSTERING API
@@ -44,37 +42,43 @@ public class CosineDistanceMetric implements DistanceMetric {
     /**
      * {@inheritDoc}
      */
+    @Override
     public double distance(final double[] tuple1, final double[] tuple2) {
-
-        // The maximum of the absolute values of all the tuple values.
-        final double maxA = Math.max(
-                TupleMath.absMaximum(tuple1),
-                TupleMath.absMaximum(tuple2));
-
+        
         final int len = tuple1.length;
-
-        double cosine = 1;
-        double sx = 0, sy = 0, sxy = 0;
-
-        if (maxA > 0.0) {
-            for (int i = 0; i < len; i++) {
-                double dx = tuple1[i] / maxA;
-                double dy = tuple2[i] / maxA;
-                sx += dx * dx;
-                sy += dy * dy;
-                sxy += dx * dy;
-            }
-            if (sxy != 0.0) {
-                cosine = sxy / Math.sqrt(sx * sy);
+        
+        double sumAB = 0;
+        double sumA2 = 0, sumB2 = 0;
+        
+        for (int i = 0; i < len; i++) {
+            sumAB += tuple1[i] * tuple2[i];
+            sumA2 += tuple1[i]*tuple1[i];
+            sumB2 += tuple2[i]*tuple2[i];
+        } 
+        
+        sumA2 = Math.sqrt(sumA2);
+        sumB2 = Math.sqrt(sumB2);
+        
+        double denom = sumA2 * sumB2;
+        
+        // If the denominator is zero, one or both has to be a zero tuple.
+        if (denom == 0.0) {
+            // If both are zero tuples, return 0.0.
+            if (sumA2 == 0.0 && sumB2 == 0.0) {
+                return 0.0;
+            } else { // Otherwise throw an exception.
+                throw new IllegalArgumentException(
+                        "cosine distance cannot be computed between a zero tuple and a nonzero tuple");
             }
         }
-
-        return 1.0 - Math.abs(cosine);
+        
+        return 1.0 - (sumAB/(sumA2*sumB2));
     }
-
+    
     /**
      * {@inheritDoc}
      */
+    @Override
     public DistanceMetric clone() {
         try {
             return (DistanceMetric) super.clone();

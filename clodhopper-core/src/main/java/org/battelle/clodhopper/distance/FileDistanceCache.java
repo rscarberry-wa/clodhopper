@@ -154,7 +154,7 @@ public class FileDistanceCache implements DistanceCache {
      *
      * @throws IOException if an IO error occurs.
      */
-    public synchronized void closeFile() throws IOException {
+    public final synchronized void closeFile() throws IOException {
         if (raFile != null) {
             raFile.close();
             raFile = null;
@@ -162,7 +162,7 @@ public class FileDistanceCache implements DistanceCache {
     }
 
     @Override
-    protected void finalize() {
+    protected void finalize() throws Throwable {
         if (isOpen()) {
             try {
                 closeFile();
@@ -189,6 +189,7 @@ public class FileDistanceCache implements DistanceCache {
     /**
      * {@inheritDoc}
      */
+    @Override
     public long distancePos(int index1, int index2) {
         if (index1 == index2) {
             throw new IllegalArgumentException("indices are equal: " + index1);
@@ -229,11 +230,13 @@ public class FileDistanceCache implements DistanceCache {
      *
      * @return - the number of indices.
      */
-    public int getNumIndices() {
+    @Override
+    public final int getNumIndices() {
         return indexCount;
     }
 
-    public long getNumDistances() {
+    @Override
+    public final long getNumDistances() {
         return distanceCount;
     }
 
@@ -337,8 +340,8 @@ public class FileDistanceCache implements DistanceCache {
             int b6 = sourceBytes[sourceIndex++] & 0xFF;
             int b7 = sourceBytes[sourceIndex++] & 0xFF;
             dest[destIndex++] = Double.longBitsToDouble(
-                    ((long) ((b0 << 24) + (b1 << 16) + (b2 << 8) + (b3 << 0)) << 32)
-                    + (((b4 << 24) + (b5 << 16) + (b6 << 8) + (b7 << 0)) & 0xFFFFFFFFL)
+                    ((long) ((b0 << 24) + (b1 << 16) + (b2 << 8) + b3) << 32)
+                    + (((b4 << 24) + (b5 << 16) + (b6 << 8) + b7) & 0xFFFFFFFFL)
             );
         }
     }
@@ -422,7 +425,7 @@ public class FileDistanceCache implements DistanceCache {
             destBytes[destIndex++] = (byte) ((int) (bits >>> 24) & 0xFF);
             destBytes[destIndex++] = (byte) ((int) (bits >>> 16) & 0xFF);
             destBytes[destIndex++] = (byte) ((int) (bits >>> 8) & 0xFF);
-            destBytes[destIndex++] = (byte) ((int) (bits >>> 0) & 0xFF);
+            destBytes[destIndex++] = (byte) ((int) bits & 0xFF);
         }
     }
 }

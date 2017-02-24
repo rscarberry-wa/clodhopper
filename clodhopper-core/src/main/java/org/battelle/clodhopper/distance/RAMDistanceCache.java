@@ -136,7 +136,7 @@ public class RAMDistanceCache implements DistanceCache {
         return distances[(int) n];
     }
 
-	// Returns the index into mDistances of the distance measure for 
+    // Returns the index into mDistances of the distance measure for 
     // index1 and index2.
     private int distanceIndex(int index1, int index2) {
         if (index1 == index2) {
@@ -228,5 +228,4 @@ public class RAMDistanceCache implements DistanceCache {
             this.distances[distanceIndex(indices1[i], indices2[i])] = distances[i];
         }
     }
-
 }
