@@ -223,7 +223,7 @@ public class KMeansClusterer extends AbstractClusterer {
                             avg /= MOVES_TRACKING_WINDOW_LEN;
                             if (avg <= 2) {
                                 oscillationDetectionOn = true;
-                                pastMoveLists = new ArrayList<List<Move>>();
+                                pastMoveLists = new ArrayList<>();
                             }
                         }
 
@@ -625,14 +625,14 @@ public class KMeansClusterer extends AbstractClusterer {
             final int assignmentWorkerCount = Math.min(workerCount, tupleCount);
             int[] tuplesPerAssignmentWorker = new int[assignmentWorkerCount];
 
-            Arrays.fill(tuplesPerAssignmentWorker, tupleCount / assignmentWorkerCount);
+            Arrays.fill(tuplesPerAssignmentWorker, tupleCount/assignmentWorkerCount);
 
-            int leftOver = tupleCount - assignmentWorkerCount * tuplesPerAssignmentWorker[0];
+            int leftOver = tupleCount%assignmentWorkerCount;
             for (int i = 0; i < leftOver; i++) {
                 tuplesPerAssignmentWorker[i]++;
             }
 
-            assignmentWorkers = new ArrayList<AssignmentWorker>(assignmentWorkerCount);
+            assignmentWorkers = new ArrayList<>(assignmentWorkerCount);
 
             int startTuple = 0;
             for (int i = 0; i < assignmentWorkerCount; i++) {
@@ -643,14 +643,14 @@ public class KMeansClusterer extends AbstractClusterer {
 
             final int centerCompWorkerCount = Math.min(workerCount, clusterCount);
             int[] clustersPerCenterCompWorker = new int[centerCompWorkerCount];
-            Arrays.fill(clustersPerCenterCompWorker, clusterCount / centerCompWorkerCount);
+            Arrays.fill(clustersPerCenterCompWorker, clusterCount/centerCompWorkerCount);
 
-            leftOver = clusterCount - centerCompWorkerCount * clustersPerCenterCompWorker[0];
+            leftOver = clusterCount%centerCompWorkerCount;
             for (int i = 0; i < leftOver; i++) {
                 clustersPerCenterCompWorker[i]++;
             }
 
-            centerCompWorkers = new ArrayList<CenterComputationWorker>(centerCompWorkerCount);
+            centerCompWorkers = new ArrayList<>(centerCompWorkerCount);
             int startCluster = 0;
             for (int i = 0; i < centerCompWorkerCount; i++) {
                 int endCluster = startCluster + clustersPerCenterCompWorker[i];
@@ -717,7 +717,7 @@ public class KMeansClusterer extends AbstractClusterer {
         private List<Move> getMovesList() {
             List<Move> movesList = null;
             if (oscillationDetectionOn) {
-                movesList = new ArrayList<Move>();
+                movesList = new ArrayList<>();
                 for (AssignmentWorker aw : assignmentWorkers) {
                     movesList.addAll(aw.getMovesList());
                 }
@@ -779,7 +779,7 @@ public class KMeansClusterer extends AbstractClusterer {
                 try {
                     moves = 0;
                     if (oscillationDetectionOn) {
-                        movesList = new ArrayList<Move>();
+                        movesList = new ArrayList<>();
                     }
                     for (int i = startTuple; i < endTuple; i++) {
                         int c = nearestCluster(i, buffer, distanceMetric);
@@ -835,7 +835,7 @@ public class KMeansClusterer extends AbstractClusterer {
             return result;
         }
 
-		// This method must be synchronized, since it will be called from multiple threads by
+	// This method must be synchronized, since it will be called from multiple threads by
         // the AssignmentWorkers.
         private synchronized void add(int newMember) {
             ensureCurrentCapacity(currentSize + 1);
@@ -935,9 +935,7 @@ public class KMeansClusterer extends AbstractClusterer {
 
             // This assumes the membership of the protoclusters is sorted.
             //
-            Sorting.quickSort(clusterIndexes, new IntComparator() {
-                @Override
-                public int compare(int n1, int n2) {
+            Sorting.quickSort(clusterIndexes, (n1, n2) -> {
 
                     ProtoCluster c1 = protoClusters[n1];
                     ProtoCluster c2 = protoClusters[n2];
@@ -947,7 +945,7 @@ public class KMeansClusterer extends AbstractClusterer {
 
                     return min1 < min2 ? -1 : min1 > min2 ? 1 : 0;
                 }
-            });
+            );
 
             this.members = new int[totalMemberCount];
             this.sizes = new int[sz];
@@ -965,6 +963,7 @@ public class KMeansClusterer extends AbstractClusterer {
             }
         }
 
+        @Override
         public int hashCode() {
             int hc = 17;
             for (int i = 0; i < sizes.length; i++) {
@@ -976,6 +975,7 @@ public class KMeansClusterer extends AbstractClusterer {
             return hc;
         }
 
+        @Override
         public boolean equals(Object o) {
             if (o == this) {
                 return true;
@@ -1008,9 +1008,9 @@ public class KMeansClusterer extends AbstractClusterer {
     // occurence that I've only seen when using cosine distances.
     private static class Move {
 
-        private int tupleIndex;
-        private int fromCluster;
-        private int toCluster;
+        private final int tupleIndex;
+        private final int fromCluster;
+        private final int toCluster;
 
         Move(int tupleIndex, int fromCluster, int toCluster) {
             this.tupleIndex = tupleIndex;

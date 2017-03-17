@@ -699,7 +699,7 @@ public class ScatterPlot2D extends JComponent
             return;
         }
         
-        int numCoords = mCoordPointList.getPointCount();
+        int numCoords = mCoordPointList != null ? mCoordPointList.getPointCount() : 0;
         for (int i=0; i<numCoords; i++) {
             int c = mDataset.getClusterForTuple(i);
             if (mClusterOpened[c]) {
