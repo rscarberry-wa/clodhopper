@@ -842,7 +842,7 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 					Dimension screenSize = Toolkit.getDefaultToolkit()
 							.getScreenSize();
 
-					JFrame frame = new JFrame("JCIM Clustering Demonstration");
+					JFrame frame = new JFrame("Clodhopper Clustering Demonstration");
 					frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 					frame.getContentPane().add(new GeneratedDataPanel());
