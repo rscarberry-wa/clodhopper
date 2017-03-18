@@ -52,9 +52,10 @@ public class HighQualityRandom extends Random {
 	}
 
 	public HighQualityRandom(long seed) {
-		setSeed(seed);
+        super(seed);
 	}
 
+    @Override
 	public synchronized void setSeed(long seed) {
 		mU = seed ^ mV;
 		nextLong();
@@ -64,6 +65,7 @@ public class HighQualityRandom extends Random {
 		nextLong();
 	}
 
+    @Override
 	public synchronized long nextLong() {
 		// LGC, like java.util.Random
 		mU = mU * 2862933555777941757L + 7046029254386353087L;
@@ -81,6 +83,7 @@ public class HighQualityRandom extends Random {
 		return ret;
 	}
 
+    @Override
 	protected int next(int bits) {
 		return (int) (nextLong() >>> (64-bits));
 	}

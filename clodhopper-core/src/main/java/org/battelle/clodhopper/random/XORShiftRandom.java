@@ -56,19 +56,22 @@ public class XORShiftRandom extends Random {
 		// super() is implicitly called here... Which
 		// calls setSeed() before mSeed is initialized.
 		mSeed = new AtomicLong(0L);
+        // Call setSeed explicitly now that mSeed is non-null.
 		setSeed(seed);
 	}
 	
-	public synchronized void setSeed(long seed) {
+    @Override
+	public synchronized final void setSeed(long seed) {
 		// Since mSeed is not initialized when this
 		// is first called by the superclass' default constructor,
-		// need this null check.
+		// must have this null check.
 		if (this.mSeed != null) this.mSeed.set(seed);
 		// Call the superclass' method, so the haveNextNextGaussian flag
 		// is reset.
 		super.setSeed(seed);
 	}
 	
+    @Override
     protected int next(int bits) {
         long oldseed, nextseed;
         AtomicLong seed = this.mSeed;

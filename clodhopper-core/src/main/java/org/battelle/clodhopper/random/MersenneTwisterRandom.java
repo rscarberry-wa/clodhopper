@@ -48,7 +48,7 @@ public class MersenneTwisterRandom extends Random {
 
 	private static final int INDICES = 624;
 	
-	private int[] mMT = new int[INDICES];
+	private final int[] mMT = new int[INDICES];
 	private int mMTIndex;
 	
 	public MersenneTwisterRandom() {
@@ -56,9 +56,10 @@ public class MersenneTwisterRandom extends Random {
 	}
 	
 	public MersenneTwisterRandom(long seed) {
-		setSeed(seed);
+        super(seed);
 	}
 	
+    @Override
 	public synchronized void setSeed(long seed) {
 		// Call the superclass' method, so the haveNextNextGaussian flag
 		// is reset.
@@ -102,9 +103,10 @@ public class MersenneTwisterRandom extends Random {
 		mMTIndex = 0;
 	}
 	
+    @Override
 	protected int next(int bits) {
 		
-		int y = 0;
+		int y;
 		
 		synchronized (this) {
 			if (mMTIndex == 0) {
@@ -125,8 +127,8 @@ public class MersenneTwisterRandom extends Random {
 	}
 	
 	private void generateNumbers() {
-		int y = 0;
-		int i = 0;
+		int y;
+		int i;
 		for (i=0; i<227; i++) {
 			y = mMT[i] & 0x80000000 | mMT[i+1] & 0x7fffffff;
 			mMT[i] = mMT[i+397] ^ y >>> 1;
@@ -142,7 +144,7 @@ public class MersenneTwisterRandom extends Random {
 				mMT[i] ^= 0x9908b0df;
 			}
 		}
-		y = mMT[lim] & 0x80000000 | mMT[0] & 0x7fffffff;;
+		y = mMT[lim] & 0x80000000 | mMT[0] & 0x7fffffff;
 		mMT[lim] = mMT[396] ^ y >>> 1;
 		if ((y & 0x01) > 0) {
 			mMT[lim] ^= 0x9908b0df;
