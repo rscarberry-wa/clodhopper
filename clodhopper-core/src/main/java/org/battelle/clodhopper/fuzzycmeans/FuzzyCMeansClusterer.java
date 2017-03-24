@@ -47,21 +47,18 @@ import org.battelle.clodhopper.util.ArrayIntIterator;
  *
  *===================================================================*/
 /**
- * Implementation of the fuzzy c-means clustering algorithm, which allows a data
- * item to belong to multiple clusters simultaneously with varying degrees of
- * membership. The final list of clusters returned is formed by assigning each
- * tuple to the cluster for which its membership is largest. However, the
- * methods <code>getDegreesOfMembership(int tupleIndex)</code> and
- * <code>getClusterCenter(int clusterIndex)</code> are provided to obtain the
- * fuzzy results.
+ * Implementation of the fuzzy c-means clustering algorithm, which allows a data item to belong to multiple clusters
+ * simultaneously with varying degrees of membership. The final list of clusters returned is formed by assigning each
+ * tuple to the cluster for which its membership is largest. However, the methods
+ * <code>getDegreesOfMembership(int tupleIndex)</code> and <code>getClusterCenter(int clusterIndex)</code> are provided
+ * to obtain the fuzzy results.
  *
  * See the following references:
- * 
- * J. C. Dunn (1973): "A Fuzzy Relative of the ISODATA Process and Its Use in
- * Detecting Compact Well-Separated Clusters", Journal of Cybernetics 3: 32-57
- * 
- * J. C. Bezdek (1981): "Pattern Recognition with Fuzzy Objective Function
- * Algorithms", Plenum Press, New York
+ *
+ * J. C. Dunn (1973): "A Fuzzy Relative of the ISODATA Process and Its Use in Detecting Compact Well-Separated
+ * Clusters", Journal of Cybernetics 3: 32-57
+ *
+ * J. C. Bezdek (1981): "Pattern Recognition with Fuzzy Objective Function Algorithms", Plenum Press, New York
  *
  * @author R.Scarberry
  * @since 1.0
@@ -71,9 +68,6 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
 
     private TupleList tuples;
     private FuzzyCMeansParams params;
-
-    // Synchronization object for changing degreesOfMembership
-    private Object mfLock = new Object();
 
     // The degrees of membership for every tuple to every cluster.  
     // Of dimensions [tupleCount][clusterCount]
@@ -97,7 +91,7 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
     private int clusterCount;
     // Just duplicates an item in params.
     private double fuzziness;
-    // Derived from fuzziness to reduce calculations.
+    // Derived from fuzziness to reduce number of calculations.
     private double fuzzyPower;
 
     /**
@@ -127,20 +121,17 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
      *
      * @param tupleIndex index of the tuple of concern.
      *
-     * @return an array containing the degrees of membership. The length is
-     *     equal to the number of clusters. The values should sum to 1.0.
-     *
+     * @return an array containing the degrees of membership. The length is equal to the number of clusters. The values
+     * should sum to 1.0.
      */
     public double[] getDegreesOfMembership(final int tupleIndex) {
         return (double[]) degreesOfMembership[tupleIndex].clone();
     }
 
     /**
-     * Returns the fuzzily-computed cluster center for a given index. The
-     * centers returned by this method are generally different from the centers
-     * of the clusters returned by <code>getClusters()</code>, because the
-     * latter method assigned the tuples to one and only one cluster then
-     * computes the centers by averaging the tuples.
+     * Returns the fuzzily-computed cluster center for a given index. The centers returned by this method are generally
+     * different from the centers of the clusters returned by <code>getClusters()</code>, because the latter method
+     * assigned the tuples to one and only one cluster then computes the centers by averaging the tuples.
      *
      * @param clusterIndex the index of the cluster.
      *
@@ -178,37 +169,50 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
                 workerThreadCount = Runtime.getRuntime().availableProcessors();
             }
 
+            // Degree of membership updaters to operate concurrently.
             domUpdaters = new ArrayList<>(workerThreadCount);
+            // Error calculators to operate concurrently.
             errorCalculators = new ArrayList<>(workerThreadCount);
 
-            int tuplesPerWorker = tupleCount / workerThreadCount;
-            int startTuple = 0;
-            for (int i = 0; i < workerThreadCount; i++) {
-                int numTuples = i < (workerThreadCount - 1) ? tuplesPerWorker
-                        : tupleCount - startTuple;
-                domUpdaters.add(new DegreesOfMembershipUpdater(startTuple,
-                        numTuples));
-                errorCalculators
-                        .add(new ErrorCalculator(startTuple, numTuples));
-                startTuple += numTuples;
+            // How many tuples each domUpdater and errorCalculator will handle.
+            int[] tuplesPerWorker = new int[workerThreadCount];
+            Arrays.fill(tuplesPerWorker, tupleCount / workerThreadCount);
+
+            // Some will do 1 more than the others.
+            int leftOver = tupleCount % workerThreadCount;
+            for (int i = 0; i < leftOver; i++) {
+                tuplesPerWorker[i]++;
             }
 
-	    // Initializes the centers and sets this.clusterCount, which may be
+            int startTuple = 0;
+            for (int i = 0; i < workerThreadCount; i++) {
+                domUpdaters.add(new DegreesOfMembershipUpdater(startTuple, tuplesPerWorker[i]));
+                errorCalculators.add(new ErrorCalculator(startTuple, tuplesPerWorker[i]));
+                startTuple += tuplesPerWorker[i];
+            }
+
+            // Initializes the centers and sets this.clusterCount, which may be
             // less than
             // than params.getClusterCount() because of too few unique tuples.
             //
             initializeCenters(ph);
 
+            // List of the centerUpdaters to operate concurrently.
             centerUpdaters = new ArrayList<>(workerThreadCount);
-            int clustersPerWorker = this.clusterCount / workerThreadCount;
+
+            // How many clusters each handles. 
+            int[] clustersPerCenterUpdater = new int[workerThreadCount];
+            Arrays.fill(clustersPerCenterUpdater, this.clusterCount / workerThreadCount);
+
+            leftOver = this.clusterCount % workerThreadCount;
+            for (int i = 0; i < leftOver; i++) {
+                clustersPerCenterUpdater[i]++;
+            }
 
             int startCluster = 0;
             for (int i = 0; i < workerThreadCount; i++) {
-                int numClusters = i < (workerThreadCount - 1) ? clustersPerWorker
-                        : clusterCount - startCluster;
-                centerUpdaters.add(new ClusterCenterUpdater(startCluster,
-                        numClusters));
-                startCluster += numClusters;
+                centerUpdaters.add(new ClusterCenterUpdater(startCluster, clustersPerCenterUpdater[i]));
+                startCluster += clustersPerCenterUpdater[i];
             }
 
             if (workerThreadCount > 1) {
@@ -286,10 +290,9 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
 
         ph.postMessage("initializing cluster centers");
 
-
         int clustCount = params.getClusterCount();
 
-		// uniqueTupleCount <= clusterCount, since checkUniqueTupleCount() stops
+        // uniqueTupleCount <= clusterCount, since checkUniqueTupleCount() stops
         // counting
         // unique tuples when the count equals clusterCount.
         int uniqueTupleCount = TupleMath.checkUniqueTupleCount(tuples,
@@ -302,6 +305,7 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
         this.checkForCancel();
 
         do {
+            
             ClusterSeeder seeder = params.getClusterSeeder();
 
             TupleList seeds = seeder.generateSeeds(tuples, clustCount);
@@ -332,12 +336,14 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
 
                 for (int k = 0; k < seeds[i].length; k++) {
                     identical = identical & (seeds[i][k] == seeds[j][k]);
-                    if (!identical) break;
+                    if (!identical) {
+                        break;
+                    }
                 }
 
                 if (identical) {
-                    ph.postMessage("Identical seeds found, regenerate the seeder: " +
-                            Arrays.deepToString(seeds));
+                    ph.postMessage("Identical seeds found, regenerate the seeder: "
+                            + Arrays.deepToString(seeds));
                     params.setClusterSeeder(new FuzzyCMeansParams().getClusterSeeder());
                     return false;
                 }
@@ -348,12 +354,10 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
     }
 
     private void updateDegreesOfMembership() throws Exception {
-        synchronized (mfLock) {
-            if (this.threadPool != null) {
-                this.threadPool.invokeAll(domUpdaters);
-            } else {
-                domUpdaters.get(0).call();
-            }
+        if (this.threadPool != null) {
+            this.threadPool.invokeAll(domUpdaters);
+        } else {
+            domUpdaters.get(0).call();
         }
     }
 
@@ -404,7 +408,7 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
             memberLists[maxc].add(i);
         }
 
-        List<Cluster> clist = new ArrayList<Cluster>(this.clusterCount);
+        List<Cluster> clist = new ArrayList<>(this.clusterCount);
 
         for (int i = 0; i < this.clusterCount; i++) {
             TIntArrayList memList = memberLists[i];
@@ -424,9 +428,9 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
 
     class DegreesOfMembershipUpdater implements Callable<Void> {
 
-        private int startTuple;
-        private int numTuples;
-        private DistanceMetric dm;
+        private final int startTuple;
+        private final int numTuples;
+        private final DistanceMetric dm;
 
         DegreesOfMembershipUpdater(int startTuple, int numTuples) {
             this.startTuple = startTuple;
@@ -475,8 +479,8 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
 
     class ClusterCenterUpdater implements Callable<Void> {
 
-        private int startCluster;
-        private int numClusters;
+        private final int startCluster;
+        private final int numClusters;
 
         ClusterCenterUpdater(int startCluster, int numClusters) {
             this.startCluster = startCluster;
@@ -526,9 +530,9 @@ public class FuzzyCMeansClusterer extends AbstractClusterer {
 
     class ErrorCalculator implements Callable<Void> {
 
-        private int startTuple;
-        private int numTuples;
-        private DistanceMetric dm;
+        private final int startTuple;
+        private final int numTuples;
+        private final DistanceMetric dm;
         private double error;
 
         ErrorCalculator(int startTuple, int numTuples) {

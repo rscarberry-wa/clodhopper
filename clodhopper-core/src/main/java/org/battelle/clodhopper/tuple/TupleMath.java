@@ -1,5 +1,6 @@
 package org.battelle.clodhopper.tuple;
 
+import gnu.trove.list.array.TDoubleArrayList;
 import java.io.*;
 import java.util.Arrays;
 import java.util.Objects;
@@ -45,9 +46,22 @@ public final class TupleMath {
      */
     static public final double SQRT2PI = Math.sqrt(2 * Math.PI);
 
+    /**
+     * Private constructor to make uninstantiable.
+     */
     private TupleMath() {
     }
 
+    /**
+     * Returns an array of doubles, the same length as the tuples, with the minimum value in each dimension,
+     * considering only the tuples included in the iterator.
+     * 
+     * @param tuples contains the tuples. Must not be null.
+     * @param ids contains the indexes of the tuples to be consider. Also must not be null.
+     * 
+     * @return an array containing the minimum values. Array elements may be NaN if no non-NaN values were found 
+     *   in the tuples.
+     */
     public static double[] minCorner(TupleList tuples, IntIterator ids) {
 
         final int len = tuples.getTupleLength();
@@ -76,6 +90,16 @@ public final class TupleMath {
         return result;
     }
 
+    /**
+     * Returns an array of doubles, the same length as the tuples, with the maximum value in each dimension,
+     * considering only the tuples included in the iterator.
+     * 
+     * @param tuples contains the tuples. Must not be null.
+     * @param ids contains the indexes of the tuples to be consider. Also must not be null.
+     * 
+     * @return an array containing the maximum values. Array elements may be NaN if no non-NaN values were found 
+     *   in the tuples.
+     */
     public static double[] maxCorner(TupleList tuples, IntIterator ids) {
 
         final int len = tuples.getTupleLength();
@@ -157,6 +181,14 @@ public final class TupleMath {
         return new HyperRect(minCorner, maxCorner);
     }
 
+    /**
+     * Computes the mean of a specified set of tuples.
+     * 
+     * @param tuples contains the tuples to be averaged (must not be null)
+     * @param ids contains the indexes of the tuples to be averaged (must not be null)
+     * 
+     * @return an array, the same length as the tuples, containing the mean values. 
+     */
     public static double[] average(TupleList tuples, IntIterator ids) {
         final int len = tuples.getTupleLength();
         double[] result = new double[len];
@@ -174,14 +206,22 @@ public final class TupleMath {
         return result;
     }
 
+    /**
+     * Computes the median of a specified set of tuples for a specified column.
+     * 
+     * @param tuples contains the tuples (must not be null)
+     * @param column the column for which the median is to be computed.
+     * @param ids contains the indexes of the tuples (must not be null)
+     * 
+     * @return the median for the specified column. 
+     */
     public static double median(TupleList tuples, int column, IntIterator ids) {
-        int[] idsArray = ids.toArray();
-        final int len = idsArray.length;
-        double[] values = new double[len];
-        for (int i = 0; i < len; i++) {
-            values[i] = tuples.getTupleValue(idsArray[i], column);
+        TDoubleArrayList values = new TDoubleArrayList();
+        ids.gotoFirst();
+        while(ids.hasNext()) {
+            values.add(tuples.getTupleValue(ids.getNext(), column));
         }
-        return median(values);
+        return median(values.toArray(new double[values.size()]), true);
     }
 
     /**

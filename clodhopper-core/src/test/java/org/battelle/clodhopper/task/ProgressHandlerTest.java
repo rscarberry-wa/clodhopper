@@ -134,7 +134,8 @@ public class ProgressHandlerTest {
         t.join();
         
         for (int i=0; i<timeBetweenPosts.size()-1; i++) {
-            assertTrue("timeBetweenPosts(" + i + ") is too large", timeBetweenPosts.get(i) >= 25L);
+            long ms = timeBetweenPosts.get(i);
+            assertTrue("timeBetweenPosts(" + i + ") is too small: " + ms, ms >= 25L);
         }
     }
 
