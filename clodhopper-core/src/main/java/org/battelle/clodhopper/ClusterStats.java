@@ -168,7 +168,7 @@ public final class ClusterStats {
 
     /**
      * Computes the Bayes Information Criterion (BIC) for a single
-     * <tt>Cluster</tt> object.
+     * {@code Cluster} object.
      *
      * @param tuples the <code>TupleList</code> from which the cluster was generated.
      * @param cluster the <code>Cluster</code> being evaluated.
@@ -180,11 +180,11 @@ public final class ClusterStats {
     }
 
     /**
-     * Computes the Bayes Information Criterion for an array of <tt>Cluster</tt>
+     * Computes the Bayes Information Criterion for an array of {@code Cluster}
      * instances.
      *
      * @param tuples contains the tuple data for the clusters.
-     * @param clusters an array of <tt>Cluster</tt> instances
+     * @param clusters an array of {@code Cluster} instances
      *
      * @return the Bayes Information Criterion.
      */
