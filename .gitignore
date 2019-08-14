@@ -4,5 +4,10 @@ target/
 .classpath
 .project
 nb-configuration.xml
-
 /clodhopper-core/nbproject/
+**/.idea/
+**/out/
+*.iml
+*.iws
+gen
+
