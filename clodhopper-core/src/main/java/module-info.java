@@ -2,6 +2,7 @@ module clodhopper.core {
     requires org.slf4j;
     requires trove4j;
     exports org.battelle.clodhopper;
+    exports org.battelle.clodhopper.dbscan;
     exports org.battelle.clodhopper.distance;
     exports org.battelle.clodhopper.fuzzycmeans;
     exports org.battelle.clodhopper.gmeans;

@@ -104,6 +104,38 @@ public class TupleKDTreeTest {
   }
   
   @Test
+  public void testCloseTo() {
+      int tupleCount = 100;
+      int tupleLength = 10;
+      int numClusters = 4;
+      
+      DistanceMetric euclidean = new EuclideanDistanceMetric();
+      TupleList tuples = generateTestTuples(tupleCount, tupleLength, 
+              numClusters, 123433L);
+      
+      TupleKDTree kdTree = TupleKDTree.forTupleListBalanced(tuples, euclidean);
+      
+      double[] tuple1 = tuples.getTuple(20, null);
+      double[] tuple2 = tuples.getTuple(40, null);
+      double distance = euclidean.distance(tuple1, tuple2);
+      
+      int[] ids = kdTree.closeTo(20, distance);
+      
+      boolean found = false;
+      for (int i=0; i<ids.length; i++) {
+          if (ids[i] == 40) {
+              found = true;
+          }
+          assertFalse(ids[i] == 20);
+          assertTrue(
+                  euclidean.distance(tuple1, tuples.getTuple(ids[i], tuple2)) 
+                          <= distance);
+      }
+      
+      assertTrue(found);
+  }
+  
+  @Test
   public void testForTupleListBalanced() {
       
     int tupleCount = 100;

@@ -14,7 +14,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Function;
 
 import org.battelle.clodhopper.AbstractClusterer;
 import org.battelle.clodhopper.Cluster;
@@ -27,7 +26,6 @@ import org.battelle.clodhopper.tuple.FilteredTupleList;
 import org.battelle.clodhopper.tuple.TupleList;
 import org.battelle.clodhopper.tuple.TupleMath;
 import org.battelle.clodhopper.util.ArrayIntIterator;
-import org.battelle.clodhopper.util.IntComparator;
 import org.battelle.clodhopper.util.Sorting;
 
 /*=====================================================================
