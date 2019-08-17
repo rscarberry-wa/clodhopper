@@ -1,5 +1,7 @@
 package org.battelle.clodhopper.util;
 
+import java.util.OptionalInt;
+
 /*=====================================================================
  * 
  *                       CLODHOPPER CLUSTERING API
@@ -30,8 +32,8 @@ package org.battelle.clodhopper.util;
  *===================================================================*/
 
 /**
- * <p>Implementation of <tt>IntIterator</tt> for iterating over
- * a continuous range of integer primitives.</p>
+ * <p>Implementation of {@code IntIterator} for iterating over
+ * a continuous range of int primitives.</p>
  * 
  * @author R. Scarberry
  *
@@ -56,15 +58,13 @@ public class IntervalIntIterator implements IntIterator {
     }
 
     @Override
-    public int getFirst() {
-        gotoFirst();
-        return getNext();
+    public OptionalInt getFirst() {
+        return upper > lower ? OptionalInt.of(lower) : OptionalInt.empty();
     }
 
     @Override
-    public int getLast() {
-        gotoLast();
-        return getPrev();
+    public OptionalInt getLast() {
+        return upper > lower ? OptionalInt.of(upper - 1) : OptionalInt.empty();
     }
 
     @Override
@@ -122,5 +122,4 @@ public class IntervalIntIterator implements IntIterator {
         }
         return clone;
     }
-    
 }

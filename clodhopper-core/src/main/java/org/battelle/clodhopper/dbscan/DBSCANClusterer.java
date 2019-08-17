@@ -9,10 +9,13 @@ import org.battelle.clodhopper.tuple.TupleList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
+import java.util.ArrayList;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import org.battelle.clodhopper.tuple.TupleMath;
+import org.battelle.clodhopper.util.ArrayIntIterator;
 
 public class DBSCANClusterer extends AbstractClusterer {
 
@@ -91,8 +94,46 @@ public class DBSCANClusterer extends AbstractClusterer {
                 }
             }
         }
-
-        return null;
+        
+        List<TIntArrayList> clusterMemberships = new ArrayList<>(clusterNum);
+        for (int i=0; i<clusterNum; i++) {
+            clusterMemberships.add(new TIntArrayList());
+        }
+        
+        // Single tuple clusters for the noise points.
+        List<Cluster> noiseClusters = new ArrayList<>();
+        
+        final TIntSet noisePoints = new TIntHashSet();
+        
+        for (int i=0; i<tupleCount; i++) {
+            int assignment = clusterAssignments[i];
+            if (assignment >= 0) {
+                clusterMemberships.get(assignment).add(i);
+            } else {
+                assert assignment == NOISE;
+                noiseClusters.add(
+                    new Cluster(new int[i], tuples.getTuple(i, null))
+                );
+                noisePoints.add(i); 
+            }
+        }
+        
+        List<Cluster> clusters = new ArrayList<>(
+                clusterNum + noiseClusters.size());
+        
+        for (TIntArrayList memberList: clusterMemberships) {
+            memberList.trimToSize();
+            int[] members = memberList.toArray();
+            Arrays.sort(members);
+            double[] center = TupleMath.average(tuples, new ArrayIntIterator(members));
+            clusters.add(new Cluster(members, center));
+        }
+        
+        clusters.addAll(noiseClusters);
+        
+        this.noisePoints = noisePoints;
+        
+        return clusters;
     }
 
     @Override

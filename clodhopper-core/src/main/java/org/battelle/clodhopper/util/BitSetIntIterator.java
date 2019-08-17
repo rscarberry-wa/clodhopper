@@ -1,6 +1,9 @@
 package org.battelle.clodhopper.util;
 
-import java.util.*;
+import java.util.BitSet;
+import java.util.NoSuchElementException;
+import java.util.OptionalInt;
+
 
 /*=====================================================================
  * 
@@ -32,10 +35,10 @@ import java.util.*;
  *===================================================================*/
 
 /**
- * <p>An implementation of <code>IntInterator</code> to iterate over the set or 
- * unset bits of a <code>cern.colt.bitvector.BitVector</code>.  The <code>BitVector</code>
+ * <p>An implementation of {@code IntInterator} to iterate over the set or 
+ * unset bits of a {@code java.util.BitSet}.  The {@code BitSet}
  * is in no way modified by the iterator.</p>
- * <p>Do not use an instance of <code>BitSetIntIterator</code> on a <code>BitVector</code>
+ * <p>Do not use an instance of {@code BitSetIntIterator} on a {@code BitSet}
  * that is being modified by other threads.  The iterator assumes the bits are static.</p>
  * 
  * @author R. Scarberry
@@ -62,7 +65,21 @@ public class BitSetIntIterator implements IntIterator {
         if (bits == null) throw new NullPointerException();
         this.bits = bits;
         this.set = set;
-        gotoFirst();
+        final int lim = bits.size();
+        for (int i=0; i<lim; i++) {
+            if (bits.get(i) == set) {
+                first = i;
+                break;
+            }
+        }
+        last = first;
+        for (int i=lim-1; i>first; i--) {
+            if (bits.get(i) == set) {
+                last = i;
+                break;
+            }
+        }
+        cursor = first;
     }
     
     /**
@@ -74,117 +91,56 @@ public class BitSetIntIterator implements IntIterator {
         this(bits, true);
     }
 
-    /**
-     * Returns the index of the first bit matching the constructor
-     * argument <code>set</code>.  
-     *
-     * @return - a nonnegative index or -1 if no matching bits are present. 
-     */
-    public int getFirst() {
-        gotoFirst();
-        return getNext();
+    @Override
+    public OptionalInt getFirst() {
+        return first >= 0 ? OptionalInt.of(first) : OptionalInt.empty();
     }
 
-    /**
-     * Returns the index of the last bit matching the constructor
-     * argument <code>set</code>.
-     *
-     * @return - a nonnegative index or -1 if no matching bits are present. 
-     */
-    public int getLast() {
-        gotoLast();
-        return getPrev();
+    @Override
+    public OptionalInt getLast() {
+        return last >= 0 ? OptionalInt.of(last) : OptionalInt.empty();
     }
 
-    /**
-     * Returns the index of the next bit matching the constructor
-     * argument <code>set</code>.  Call <code>hasNext()</code> prior to calling
-     * this method to confirm that another matching bit is present.
-     *
-     * @return - a nonnegative index or -1 if no matching bits are present. 
-     */
+    @Override
     public int getNext() {
+        if (!hasNext()) {
+            throw new NoSuchElementException();
+        }
         int rtn = cursor;
         gotoNext();
-        if (!hasNext()) {
-            gotoLast();
-        }
         return rtn;
     }
 
-    /**
-     * Returns the index of the previous bit matching the constructor
-     * argument <code>set</code>.  Call <code>hasPrev()</code> prior to calling
-     * this method to confirm that another matching bit is present.
-     *
-     * @return - a nonnegative index or -1 if no matching bits are present. 
-     */
+    @Override
     public int getPrev() {
+        if (!hasPrev()) {
+            throw new NoSuchElementException();
+        }
         gotoPrev();
-        lastFlag = false;
         return cursor;
     }
 
-    /**
-     * Position the cursor for iterating forward starting from the first bit
-     * that matches the constructor argument <code>set</code>
-     */
+    @Override
     public void gotoFirst() {
-        if (first == -1) {
-           int lim = bits.size();
-           for (int i=0; i<lim; i++) {
-               if (bits.get(i) == set) {
-                   first = i;
-                   break;
-               }
-           }
-        }
         cursor = first;
     }
 
-    /**
-     * Position the cursor for iterating backwards starting from the last bit
-     * that matches the constructor argument <code>set</code>
-     */
+    @Override
     public void gotoLast() {
-        cursor = -1;
-        if (last == -1) {
-            int lim = bits.size();
-            for (int i=lim-1; i>=0; i--) {
-                if (bits.get(i) == set) {
-                    last = i;
-                    break;
-                }
-            }
-         }
-         lastFlag = (last >= 0);
+        cursor = last >= 0 ? last + 1 : -1;
     }
 
-    /**
-     * Is there another bit matching the constructor argument <code>set</code>
-     * in the forward direction?  That is, will an immediate call to 
-     * <code>getNext()</code> return a nonnegative index?
-     */
+    @Override
     public boolean hasNext() {
-        return cursor >= 0;
+        return cursor >= 0 && cursor <= last;
     }
 
-    /**
-     * Is there another bit matching the constructor argument <code>set</code>
-     * in the backward direction?  That is, will an immediate call to 
-     * <code>getPrev()</code> return a nonnegative index?
-     */
+    @Override
     public boolean hasPrev() {
-        int csr = cursor;
-        gotoPrev();
-        boolean rtn = cursor >= 0;
-        cursor = csr;
-        return rtn;
+        return cursor >= 0 && cursor > first;
     }
 
-    /** 
-     * Returns the number of bits matching the constructor argument <code>set</code>.
-     */
+    @Override
     public int getSize() {
         int sz = bits.cardinality();
         if (!set) {
@@ -193,11 +149,7 @@ public class BitSetIntIterator implements IntIterator {
         return sz;
     }
 
-    
-    /** 
-     * Returns the indexes of the bits matching the constructor argument <code>set</code>.
-     * This array will always be ascendingly sorted.
-     */
+    @Override
     public int[] toArray() {
         int sz = getSize();
         int[] rtn = new int[sz];
@@ -211,9 +163,7 @@ public class BitSetIntIterator implements IntIterator {
         return rtn;
     }
 
-    /**
-     * Returns a deep clone of the receiving object.
-     */
+    @Override
     public IntIterator clone() {
         BitSetIntIterator clone = null; 
         try {
@@ -237,6 +187,9 @@ public class BitSetIntIterator implements IntIterator {
                     break;
                 }
             }
+            if (cursor == -1 && last >= 0) {
+                cursor = last + 1;
+            }
         }
     }
     
@@ -251,9 +204,6 @@ public class BitSetIntIterator implements IntIterator {
                     break;
                 }
             }
-        } else if (lastFlag) {
-            cursor = last;
         }
     }
-
 }

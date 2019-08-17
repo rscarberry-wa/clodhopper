@@ -1,6 +1,8 @@
 package org.battelle.clodhopper.util;
 
 import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.OptionalInt;
 
 /*=====================================================================
  * 
@@ -31,74 +33,91 @@ import java.util.NoSuchElementException;
  *
  *===================================================================*/
 
+/**
+ * An implementation of {@code IntIterator} backed by an array of int values.
+ * @author R.Scarberry
+ */
 public class ArrayIntIterator implements IntIterator {
 
 	private int[] values;
 	private int cursor;
 	
+        /**
+         * Constructor
+         * @param values 
+         */
 	public ArrayIntIterator(int[] values) {
-		if (values == null) {
-			throw new NullPointerException();
-		}
-		this.values = values;
+            Objects.requireNonNull(values, "values cannot be null");
+            this.values = values;
 	}
 	
-	
+	@Override
 	public void gotoFirst() {
-		cursor = 0;
+            cursor = 0;
 	}
 	
+        @Override
 	public void gotoLast() {
-		cursor = values.length;
+            cursor = values.length;
 	}
 	
-	public int getFirst() {
-		gotoFirst();
-		return getNext();
+        @Override
+	public OptionalInt getFirst() {
+            return values.length > 0 ? 
+                OptionalInt.of(values[0]) : OptionalInt.empty();
 	}
 	
-	public int getLast() {
-		gotoLast();
-		return getPrev();
+        @Override
+	public OptionalInt getLast() {
+            return values.length > 0 ? 
+                OptionalInt.of(values[values.length - 1]) : 
+                OptionalInt.empty();
 	}
 	
+        @Override
 	public boolean hasNext() {
-		return cursor < values.length;
+            return cursor < values.length;
 	}
 	
+        @Override
 	public boolean hasPrev() {
-		return cursor > 0;
+            return cursor > 0;
 	}
 
+        @Override
 	public int getNext() {
-		if (hasNext()) {
-			return values[cursor++];
-		}
-		throw new NoSuchElementException();
+            if (hasNext()) {
+		return values[cursor++];
+            }
+            throw new NoSuchElementException();
 	}
 	
+        @Override
 	public int getPrev() {
-		if (hasPrev()) {
-			return values[--cursor];
-		}
-		throw new NoSuchElementException();
+            if (hasPrev()) {
+		return values[--cursor];
+            }
+            throw new NoSuchElementException();
 	}
 
+        @Override
 	public int getSize() {
-		return values.length;
+            return values.length;
 	}
 	
+        @Override
 	public int[] toArray() {
-		return (int[]) values.clone();
+            return (int[]) values.clone();
 	}
 	
+        @Override
 	public IntIterator clone() {
-		try {
-			ArrayIntIterator clone = (ArrayIntIterator) super.clone();
-			clone.values = this.toArray();
-			return clone;
-		} catch (CloneNotSupportedException e) {
-			throw new InternalError();
-		}
+            try {
+		ArrayIntIterator clone = (ArrayIntIterator) super.clone();
+		clone.values = this.toArray();
+		return clone;
+            } catch (CloneNotSupportedException e) {
+		throw new InternalError();
+            }
 	}
 }
