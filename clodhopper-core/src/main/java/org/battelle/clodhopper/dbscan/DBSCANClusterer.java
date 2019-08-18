@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import org.battelle.clodhopper.tuple.TupleMath;
 import org.battelle.clodhopper.util.ArrayIntIterator;
 
@@ -25,7 +26,7 @@ public class DBSCANClusterer extends AbstractClusterer {
     private TupleList tuples;
     private DBSCANParams params;
     
-    private TIntSet noisePoints;
+    private DBSCANClassification tupleClassification;
 
     public DBSCANClusterer(final TupleList tuples, final DBSCANParams params) {
         Objects.requireNonNull(tuples);
@@ -34,10 +35,6 @@ public class DBSCANClusterer extends AbstractClusterer {
         this.params = params;
     }
 
-    public boolean isNoise(int tupleIndex) {
-        return noisePoints != null && noisePoints.contains(tupleIndex);
-    }
-    
     @Override
     protected List<Cluster> doTask() throws Exception {
         final int tupleCount = tuples.getTupleCount();
@@ -58,13 +55,21 @@ public class DBSCANClusterer extends AbstractClusterer {
         final int minPoints = params.getMinSamples() - 1;
 
         int clusterNum = 0;
+        
+        TIntSet noiseIds = new TIntHashSet();
+        TIntSet edgeIds = new TIntHashSet();
+        TIntSet coreIds = new TIntHashSet();
 
         for (int i=0; i<tupleCount; i++) {
             if (clusterAssignments[i] == UNASSIGNED) {
                 int[] neighbors = kdTree.closeTo(i, epsilon);
                 if (neighbors.length < minPoints) {
+                    // Call it noise for now, but it may turn out to be
+                    // an edge point.
                     clusterAssignments[i] = NOISE;
+                    noiseIds.add(i);
                 } else {
+                    coreIds.add(i);
                     // For keeping duplicates out of the list
                     TIntSet neighborSet = new TIntHashSet(neighbors);
                     TIntList neighborList = new TIntArrayList(neighbors);
@@ -74,12 +79,17 @@ public class DBSCANClusterer extends AbstractClusterer {
                     for (int j=0; j<neighborList.size(); j++) {
                         int nbr = neighborList.get(j);
                         if (clusterAssignments[nbr] == NOISE) {
-                            // It's an edge point on the cluster.
+                            // It's not noise after all, but an edge point on the cluster.
                             clusterAssignments[nbr] = clusterNum;
+                            // Remember to remove it from the noiseIds
+                            noiseIds.remove(nbr);
+                            edgeIds.add(nbr);
                         } else if (clusterAssignments[nbr] == UNASSIGNED) {
                             clusterAssignments[nbr] = clusterNum;
                             int[] moreNeighbors = kdTree.closeTo(nbr, epsilon);
                             if (moreNeighbors.length >= minPoints) {
+                                // It has sufficient number of neighbors to be core.
+                                coreIds.add(nbr);
                                 for (int k=0; k<moreNeighbors.length; k++) {
                                     int nbr2 = moreNeighbors[k];
                                     if (!neighborSet.contains(nbr2)) {
@@ -87,6 +97,8 @@ public class DBSCANClusterer extends AbstractClusterer {
                                         neighborList.add(nbr2);
                                     }
                                 }
+                            } else { // Doesn't have sufficient neighbors to be core.
+                                edgeIds.add(nbr);
                             }
                         }
                     }
@@ -112,7 +124,7 @@ public class DBSCANClusterer extends AbstractClusterer {
             } else {
                 assert assignment == NOISE;
                 noiseClusters.add(
-                    new Cluster(new int[i], tuples.getTuple(i, null))
+                    new Cluster(new int[] { i }, tuples.getTuple(i, null))
                 );
                 noisePoints.add(i); 
             }
@@ -131,7 +143,8 @@ public class DBSCANClusterer extends AbstractClusterer {
         
         clusters.addAll(noiseClusters);
         
-        this.noisePoints = noisePoints;
+        this.tupleClassification = new DBSCANClassification(
+                coreIds, edgeIds, noiseIds);
         
         return clusters;
     }
@@ -139,5 +152,9 @@ public class DBSCANClusterer extends AbstractClusterer {
     @Override
     public String taskName() {
         return "DBSCAN clustering";
+    }
+    
+    public Optional<DBSCANClassification> getTupleClassification() {
+        return Optional.ofNullable(this.tupleClassification);
     }
 }
