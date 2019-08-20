@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Optional;
 
 /*=====================================================================
@@ -47,7 +48,31 @@ import java.util.Optional;
  */
 public class DistanceCacheFactory {
 
-    private DistanceCacheFactory() {
+    private final long memoryThreshold;
+    private final long fileThreshold;
+    private final File fileCacheDirectory;
+
+    /**
+     * Constructor
+     * 
+     * @param memoryThreshold the maximum amount of memory to store distances
+     * @param fileThreshold the maximum length of a file in bytes for
+     *   storing all distances in a single file, if distances cannot fit in
+     *   memory. 
+     * @param fileCacheDirectory directory in which to store distance cache
+     *   files if necessary.
+     */
+    public DistanceCacheFactory(
+            long memoryThreshold,
+            long fileThreshold,
+            File fileCacheDirectory) {
+        Objects.requireNonNull(fileCacheDirectory, "fileCacheDirectory is required");
+        if (!fileCacheDirectory.isDirectory()) {
+            throw new IllegalArgumentException("directory does not exist: " + fileCacheDirectory);
+        }
+        this.memoryThreshold = memoryThreshold;
+        this.fileThreshold = fileThreshold;
+        this.fileCacheDirectory = fileCacheDirectory;
     }
 
     /**
@@ -59,30 +84,24 @@ public class DistanceCacheFactory {
      *
      * @param tupleCount the number of tuples for which distances must be
      * maintained.
-     * @param memoryThreshold the memory threshold determining whether or not to
-     * create a cache storing all the distances in memory.
-     * @param fileThreshold the threshold determining whether or not the
-     * distances can be stored in a disk file.
-     * @param cacheFile the file to use for the cache if a disk file is used for
-     * the cache.
      *
-     * @return an <code>Optional</code> containing an instance of <code>DistanceCache</code> or 
-     *     <code>Optional.absent()</code> if neither of the thresholds can be met.
+     * @return an <code>Optional</code> containing an instance of
+     * <code>DistanceCache</code> or <code>Optional.absent()</code> if neither
+     * of the thresholds can be met.
      *
      * @throws IOException if an IO error occurs.
      */
-    public static Optional<DistanceCache> newDistanceCache(
-        final int tupleCount,
-        final long memoryThreshold,
-        final long fileThreshold,
-        final File cacheFile) throws IOException {
+    public Optional<DistanceCache> newDistanceCache(final int tupleCount) 
+            throws IOException {
 
         DistanceCache cache = null;
-        
+
         long size = distanceCacheSize(tupleCount);
         if (size <= memoryThreshold) {
             cache = new RAMDistanceCache(tupleCount);
         } else if (size <= fileThreshold) {
+            File cacheFile = File.createTempFile(
+                    "distcache_", ".dst", fileCacheDirectory);
             cache = new FileDistanceCache(tupleCount, cacheFile);
         }
 
@@ -121,7 +140,7 @@ public class DistanceCacheFactory {
      *
      * @param byteThreshold the threshold in bytes.
      * @return the maximum number of tuples whose pairwise distances can be
-     *     stored in the given number of bytes.
+     * stored in the given number of bytes.
      */
     public static int tupleLimit(final long byteThreshold) {
         return (int) ((Math.sqrt(16.0 + 16.0 * (byteThreshold - 4L)) + 4.0) / 8.0);
@@ -133,8 +152,8 @@ public class DistanceCacheFactory {
      *
      * @param pos the index at which the distance is stored.
      * @param cache the cache containing the distances.
-     * @return the two tuple indexes whose pairwise distance is stored at the 
-     *     specified position.
+     * @return the two tuple indexes whose pairwise distance is stored at the
+     * specified position.
      */
     public static int[] getIndicesForDistance(final long pos, final ReadOnlyDistanceCache cache) {
 
@@ -176,7 +195,7 @@ public class DistanceCacheFactory {
 
             try {
 
-				// The first version of this used the nio method of
+                // The first version of this used the nio method of
                 // getting the source FileChannel and the destination
                 // FileChannel and using the FileChannel method 
                 // transferTo.  But this failed on large files ( > 2GB), 
@@ -184,7 +203,7 @@ public class DistanceCacheFactory {
                 long flen = src.length();
                 fis = new FileInputStream(src);
 
-				// Found this buffer size to give the speediest 
+                // Found this buffer size to give the speediest 
                 // performance on my Windows XP laptop.  May want
                 // to make the buffer size a static class member
                 // initialized to an optimum value for the OS.
@@ -204,7 +223,7 @@ public class DistanceCacheFactory {
             } finally {
 
                 if (fos != null) {
-					// Don't trap IOException, because if this file
+                    // Don't trap IOException, because if this file
                     // doesn't close successfully, the cache probably didn't
                     // save successfully.
                     fos.close();
@@ -237,7 +256,7 @@ public class DistanceCacheFactory {
             } finally {
 
                 if (dos != null) {
-					// Don't trap IOException, because if this file
+                    // Don't trap IOException, because if this file
                     // doesn't close successfully, the cache probably didn't
                     // save successfully.
                     dos.close();
@@ -252,16 +271,19 @@ public class DistanceCacheFactory {
      * the file fits within the specified thresholds.
      *
      * @param f the file from which to read the distances.
-     * @param memoryThreshold the max threshold for storing all distances in a <code>RAMDistanceCache</code>.
-     * @param fileThreshold the max threshold for accessing the distances using a <code>FileDistanceCache</code>.
-     * @return an <code>Optional</code> containing an instance of <code>DistanceCache</code> or 
-     *     <code>Optional.absent()</code> if neither of the thresholds can be met.
+     * @param memoryThreshold the max threshold for storing all distances in a
+     * <code>RAMDistanceCache</code>.
+     * @param fileThreshold the max threshold for accessing the distances using
+     * a <code>FileDistanceCache</code>.
+     * @return an <code>Optional</code> containing an instance of
+     * <code>DistanceCache</code> or <code>Optional.absent()</code> if neither
+     * of the thresholds can be met.
      * @throws IOException if an IO error occurs.
      */
     public static Optional<DistanceCache> read(
-        final File f,
-        final long memoryThreshold,
-        final long fileThreshold) throws IOException {
+            final File f,
+            final long memoryThreshold,
+            final long fileThreshold) throws IOException {
 
         DistanceCache cache = null;
 

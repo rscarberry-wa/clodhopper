@@ -34,6 +34,7 @@ import java.util.concurrent.Executors;
 import org.battelle.clodhopper.distance.DistanceCache;
 import org.battelle.clodhopper.distance.DistanceCacheFactory;
 import org.battelle.clodhopper.distance.DistanceMetric;
+import org.battelle.clodhopper.distance.FileDistanceCache;
 import org.battelle.clodhopper.task.ProgressHandler;
 import org.battelle.clodhopper.tuple.TupleList;
 
@@ -75,20 +76,22 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
     public static final long DEFAULT_MEM_THRESHOLD = 128L * 1024L * 1024L;
     public static final long DEFAULT_FILE_THRESHOLD = 2L * 1024L * 1024L * 1024L;
 
-	// Threshold that determines the number of coordinates whose
+    // Threshold that determines the number of coordinates whose
     // pairwise distances can be cached in RAM.  Defaulting to 128MB,
     // this equates to 5793 coordinates.  If there are more coordinates
     // than this, a file-based cache will have to be used.
     private long distanceCacheMemThreshold = DEFAULT_MEM_THRESHOLD;
 
-	// The file threshold limits the number of coordinates that can be
+    // The file threshold limits the number of coordinates that can be
     // hierarchically clustered.  By default, this threshold is 2GB, limiting
     // the number of coordinates to 23,170.
     private long distanceCacheFileThreshold = DEFAULT_FILE_THRESHOLD;
 
-	// The directory in which to store cache files temporarily during the
+    // The directory in which to store cache files temporarily during the
     // construction of a new dendrogram.
-    private File cacheFileLocation;
+    private File cacheFileLocation = new File(
+            System.getProperty("java.io.tmpdir")
+    );
 
     public StandardHierarchicalClusterer(TupleList tuples,
             HierarchicalParams params,
@@ -121,8 +124,9 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
      * required is less than the file threshold. If the memory required is even
      * greater than the distance cache file threshold, hierarchical clustering
      * will fail.
-     * 
-     * @param threshold the maximum byte threshold for storing distances in memory.
+     *
+     * @param threshold the maximum byte threshold for storing distances in
+     * memory.
      */
     public void setDistanceCacheMemoryThreshold(final long threshold) {
         distanceCacheMemThreshold = threshold;
@@ -146,8 +150,9 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
      * platforms with large amounts of RAM, setting this value high may result
      * in better clustering speed on large coordinate sets. If not set, the
      * threshold defaults to 128MB.
-     * 
-     * @param threshold the maximum threshold in bytes for storing distances in a file.
+     *
+     * @param threshold the maximum threshold in bytes for storing distances in
+     * a file.
      */
     public void setDistanceCacheFileThreshold(final long threshold) {
         distanceCacheFileThreshold = threshold;
@@ -170,8 +175,9 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
      * exist, it will be created when necessary. Temporary files should not be
      * left in this directory, since they are deleted when no longer needed.
      *
-     * @param location directory in which temporary distance caches are to be stored.
-     * 
+     * @param location directory in which temporary distance caches are to be
+     * stored.
+     *
      * @throws IllegalArgumentException - if the location exists but is not a
      * directory.
      */
@@ -210,11 +216,6 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
 
         int tupleCount = tuples.getTupleCount();
 
-	// File used for cache and copy of the cache.  cacheFile is only used if
-        // the pairwise distances are stored in a FileDistanceCache.  cacheFile2
-        // is only used if optimizing the dendrogram.
-        File cacheFile = null, cacheFile2 = null;
-
         Optional<DistanceCache> cache = Optional.empty();
         SubtaskManager mgr = null;
 
@@ -222,18 +223,18 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
 
             ph.subsection(fracForCacheCreation);
 
-            // Create a temp file for the cache, even though it might not be used.
-            cacheFile = File.createTempFile("dcache", null, cacheFileLocation);
-            cacheFile.deleteOnExit();
-
+            DistanceCacheFactory distanceCacheFactory = new DistanceCacheFactory(
+                    distanceCacheMemThreshold, distanceCacheFileThreshold,
+                    cacheFileLocation
+            );
+            
             dendrogram = new Dendrogram(tupleCount);
 
             ph.postMessage("creating new distance cache");
 
             if (tupleCount > 1) {
-                cache = DistanceCacheFactory.newDistanceCache(tupleCount,
-                        distanceCacheMemThreshold, distanceCacheFileThreshold, cacheFile);
-            } 
+                cache = distanceCacheFactory.newDistanceCache(tupleCount);
+            }
 
             ph.postEnd();
 
@@ -285,17 +286,17 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
 
         } finally {
 
-            cache = null;
+            if (cache.isPresent()) {
+                DistanceCache dc = cache.get();
+                if (dc instanceof FileDistanceCache) {
+                    FileDistanceCache fdc = (FileDistanceCache) dc;
+                    fdc.closeFile();
+                    fdc.getFile().delete();
+                }
+            }
+            
             if (mgr != null) {
                 mgr.shutdown();
-            }
-
-            // Clean up temporary files.
-            if (cacheFile != null && cacheFile.exists()) {
-                cacheFile.delete();
-            }
-            if (cacheFile2 != null && cacheFile2.exists()) {
-                cacheFile2.delete();
             }
         }
 
@@ -303,7 +304,7 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
 
     private class SubtaskManager {
 
-	// Codes for what the workers are currently doing.
+        // Codes for what the workers are currently doing.
         //
         // Nothing currently.
         static final int DOING_NOTHING = 0;
@@ -317,14 +318,14 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
         // What the object is currently doing.
         private int doing = DOING_NOTHING;
 
-	// The ThreadPool that runs the Workers when in multi-processor mode.
+        // The ThreadPool that runs the Workers when in multi-processor mode.
         // O/W, it is null.
         private ExecutorService threadPool;
 
         // The worker objects which implement Runnable.
         private List<Worker> workers;
 
-	// Indices of nearest neighbors. The index of the nearest neighbor of
+        // Indices of nearest neighbors. The index of the nearest neighbor of
         // node n is
         // found at mNNIndices[n]
         private int[] nnIndices;
@@ -340,9 +341,9 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
 
         // Constructor.
         SubtaskManager(int numWorkers,
-            final HierarchicalParams params,
-            final TupleList tuples,
-            final Optional<DistanceCache> cache) {
+                final HierarchicalParams params,
+                final TupleList tuples,
+                final Optional<DistanceCache> cache) {
 
             if (numWorkers <= 0) {
                 throw new IllegalArgumentException("number of workers <= 0: "
@@ -394,13 +395,13 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
             }
         }
 
-		// Null the items that could be consuming large amounts of
+        // Null the items that could be consuming large amounts of
         // memory.
         protected void finalize() {
             this.cache = null;
         }
 
-		// Called to stop the threads of the thread pool, which would otherwise
+        // Called to stop the threads of the thread pool, which would otherwise
         // keep waiting for another request to do something.
         void shutdown() {
             if (threadPool != null) {
@@ -412,9 +413,11 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
          * Find the nearest neighbor pair, placing the indices into the provided
          * array of length 2.
          *
-         * @param indices array into which to place the nearest neighbor indexes.
-         * @param distance 1 element array to hold the nearest neighbor distance.
-         * 
+         * @param indices array into which to place the nearest neighbor
+         * indexes.
+         * @param distance 1 element array to hold the nearest neighbor
+         * distance.
+         *
          * @return - true if a pair is found.
          */
         boolean lookupNearestNeighbors(int[] indices, double[] distance) {
@@ -458,7 +461,7 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
             leftCount = dendrogram.nodeSize(leftIndex);
             rightCount = dendrogram.nodeSize(rightIndex);
 
-			// The usual convention is for the merge index to be the lesser of
+            // The usual convention is for the merge index to be the lesser of
             // the left child index and the right child index.  Since the merge index
             // is definitely one of these, the count for the child that merge index
             // is equal to is too large.  It's actually the count of the merged
@@ -497,7 +500,7 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
             return ok;
         }
 
-		// Class that does the deeds.
+        // Class that does the deeds.
         //
         private class Worker implements Callable<Void> {
 
@@ -510,12 +513,12 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
             // Working buffers
             private double[] buf1, buf2;
 
-			// The coordinate set -- ref. to same object used by everything
+            // The coordinate set -- ref. to same object used by everything
             // else.
             // Set to prevent having to call getCoordinateSet() repeatedly.
             private TupleList theTuples;
 
-			// Personal clone of the DistanceFunc, to avoid synchronization
+            // Personal clone of the DistanceFunc, to avoid synchronization
             // problems.
             // All workers sharing the same object would probably work, but use
             // a clone
@@ -526,7 +529,7 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
             Worker(long startDistance, long distanceCount,
                     int startTuple, int tupleCount) {
 
-				// Set the endpoints for the indices. These are the indices
+                // Set the endpoints for the indices. These are the indices
                 // into the distance cache.
                 int[] indices = DistanceCacheFactory.getIndicesForDistance(startDistance, cache);
                 index1Min = indices[0];
@@ -564,7 +567,7 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
                 return null;
             }
 
-		    // Compute the distances.
+            // Compute the distances.
             //
             private void workerInitializeDistances() {
 
@@ -595,7 +598,7 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
 
                                 double distance = distMetric.distance(buf1, buf2);
 
-		            			// These 2 if-blocks initialize the mNNDistances and
+                                // These 2 if-blocks initialize the mNNDistances and
                                 // mNNIndices.
                                 if (distance < nnDistances[i]) {
                                     nnDistances[i] = distance;
@@ -640,14 +643,14 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
                         return;
 
                     } catch (CancellationException ce) {
-						// Ignore, since the thread running the cluster task
+                        // Ignore, since the thread running the cluster task
                         // will
                         // report the cancel.
                     }
                 }
             }
 
-			// Update nearest neighbors.
+            // Update nearest neighbors.
             //
             private void workerUpdateNearestNeighbors() {
                 try {
@@ -678,7 +681,7 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
 
                                 checkForCancel();
 
-			                  // The "bug" discussed above will sometimes set a node's
+                                // The "bug" discussed above will sometimes set a node's
                                 // nearest neighbor id to itself with a nn distance of
                                 // Double.MAX_VALUE.  But it won't cause any harm.
                                 nnIndices[i] = newNNIndex;
@@ -699,7 +702,7 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
                     finishWithError("error updating nearest neighbors: " + errMsg);
 
                 } catch (CancellationException ce) {
-			    	 // Ignore, since the thread running the cluster task
+                    // Ignore, since the thread running the cluster task
                     // will
                     // report the cancel.
                 }
@@ -784,7 +787,7 @@ public class StandardHierarchicalClusterer extends AbstractHierarchicalClusterer
                     }
                     finishWithError("error updating pairwise distances: " + errMsg);
                 } catch (CancellationException ce) {
-			    	 // Ignore, since the thread running the cluster task
+                    // Ignore, since the thread running the cluster task
                     // will
                     // report the cancel.
                 }

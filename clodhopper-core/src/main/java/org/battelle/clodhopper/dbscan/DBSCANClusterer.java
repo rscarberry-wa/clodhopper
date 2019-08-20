@@ -9,12 +9,15 @@ import org.battelle.clodhopper.tuple.TupleList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
+import java.io.File;
 import java.util.ArrayList;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.battelle.clodhopper.ClusterStats;
+import org.battelle.clodhopper.distance.DistanceCacheFactory;
 import org.battelle.clodhopper.tuple.TupleMath;
 import org.battelle.clodhopper.util.ArrayIntIterator;
 
@@ -145,6 +148,36 @@ public class DBSCANClusterer extends AbstractClusterer {
         
         this.tupleClassification = new DBSCANClassification(
                 coreIds, edgeIds, noiseIds);
+        
+        DistanceCacheFactory distanceCacheFactory = new DistanceCacheFactory(
+            1024L*1024L*100L,
+            1024L*1024L*1024L,
+            new File(System.getProperty("java.io.tmpdir"))
+        );
+        
+        Optional<List<Double>> silhouetteScores = 
+                ClusterStats.computeSilhouetteCoefficients(
+                        tuples, clusters, params.getDistanceMetric(), 
+                        distanceCacheFactory);
+        
+        if (silhouetteScores.isPresent()) {
+            List<Double> scores = silhouetteScores.get();
+            postMessage("Clusters received the following silhouette scores:");
+            int memberCount = 0;
+            double weightedSum = 0;
+            for (int i=0; i<clusters.size(); i++) {
+                Cluster c = clusters.get(i);
+                if (c.getMemberCount() == 1) {
+                    break;
+                }
+                postMessage(String.format("\t%d: %f", i+1, scores.get(i).doubleValue()));
+                weightedSum += scores.get(i).doubleValue() * c.getMemberCount();
+                memberCount += c.getMemberCount();
+            }
+            if (memberCount > 0) {
+                postMessage("  Overall score: " + weightedSum/memberCount);
+            }
+        }
         
         return clusters;
     }
