@@ -15,8 +15,11 @@ import java.util.stream.Collectors;
 import org.battelle.clodhopper.distance.DistanceCache;
 import org.battelle.clodhopper.distance.DistanceCacheFactory;
 import org.battelle.clodhopper.distance.DistanceMetric;
+import org.battelle.clodhopper.distance.FakeDistanceCache;
 import org.battelle.clodhopper.distance.FileDistanceCache;
 import org.battelle.clodhopper.distance.RAMDistanceCache;
+import org.battelle.clodhopper.distance.ReadOnlyDistanceCache;
+import org.battelle.clodhopper.tuple.FilteredTupleList;
 
 import org.battelle.clodhopper.tuple.TupleList;
 import org.battelle.clodhopper.tuple.TupleMath;
@@ -300,6 +303,12 @@ public final class ClusterStats {
         Objects.requireNonNull(tuples);
         Objects.requireNonNull(clusters);
         Objects.requireNonNull(distanceMetric);
+        Objects.requireNonNull(distanceCacheFactory);
+        
+        final int numTuples = tuples.getTupleCount();
+        final int numClusters = clusters.size();
+        final double[] As = new double[numTuples];
+        final double[] Bs = new double[numTuples];
         
         final int numThreads = Runtime.getRuntime().availableProcessors();
         
@@ -309,42 +318,90 @@ public final class ClusterStats {
         
         try {
             
-            List<Callable<OptionalDouble>> callables = new ArrayList<>(clusters.size());
+            List<Callable<double[]>> aCallables = new ArrayList<>(clusters.size());
+            
             for (Cluster c: clusters) {
-                callables.add(new Callable<>() {
-                    @Override
-                    public OptionalDouble call() throws Exception {
-                        return computeSilhouetteCoefficient(tuples, clusters, c, distanceMetric, distanceCacheFactory); 
-                    }                   
+                aCallables.add(() -> {
+                        ReadOnlyDistanceCache distanceCache = null;
+                        try {
+                        DistanceMetric dm = distanceMetric.clone();
+                        Optional<ReadOnlyDistanceCache> opt = computePairwiseDistances(
+                                tuples, c, dm, 
+                                distanceCacheFactory);
+                        distanceCache = opt.orElse(
+                                new FakeDistanceCache(
+                                        new FilteredTupleList(
+                                                c.getMembers().toArray(), 
+                                                tuples), 
+                                        dm)
+                        );
+                        return computeAs(c, distanceCache);
+                        } finally {
+                            if (distanceCache instanceof FileDistanceCache) {
+                                FileDistanceCache fdc = (FileDistanceCache) distanceCache;
+                                fdc.closeFile();
+                                fdc.getFile().delete();
+                            }
+                        }
                 });
             }
             
-            List<Future<OptionalDouble>> futures = executorService.invokeAll(callables);
+            List<Future<double[]>> aFutures = executorService.invokeAll(aCallables);
             
-            result = futures.stream()
-                    .map(f -> {
-                        try {
-                            return f.get();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            return OptionalDouble.empty();
-                        }
-                    })
-                    .filter(OptionalDouble::isPresent)
-                    .map(OptionalDouble::getAsDouble)
-                    .collect(Collectors.toList());
+            for (int i=0; i<numClusters; i++) {
+                Cluster c = clusters.get(i);
+                final double[] clusterAs = aFutures.get(i).get();
+                final int numMembers = c.getMemberCount();
+                for (int j=0; j<numMembers; j++) {
+                    As[c.getMember(j)] = clusterAs[j];
+                }
+            }
             
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            List<Callable<double[]>> bCallables = new ArrayList<>(numClusters);
+            
+            for (int i=0; i<numClusters; i++) {
+                final int clusterId = i;
+                bCallables.add(() -> {
+                    return computeBs(tuples, clusters, clusterId, distanceMetric.clone());
+                });
+            }
+            
+            List<Future<double[]>> bFutures = executorService.invokeAll(bCallables);
+            
+            for (int i=0; i<numClusters; i++) {
+                Cluster c = clusters.get(i);
+                final double[] clusterBs = bFutures.get(i).get();
+                final int numMembers = c.getMemberCount();
+                for (int j=0; j<numMembers; j++) {
+                    Bs[c.getMember(j)] = clusterBs[j];
+                }
+            }
+            
+        } catch (Exception e) {
+            
         } finally {
-            executorService.shutdownNow();
+            if (executorService != null) {
+                executorService.shutdownNow();
+            }
         }
         
-        if (result == null || result.size() != clusters.size()) {
-            return Optional.empty();
+        List<Double> clusterSilhouettes = new ArrayList<>(numClusters);
+        for (Cluster c: clusters) {
+            final int memberCount = c.getMemberCount();
+            double sum = 0.0;
+            for (int i=0; i<memberCount; i++) {
+                final int tupleId = c.getMember(i);
+                final double maxAB = Math.max(As[tupleId], Bs[tupleId]);
+                double tupleSilhouette = Bs[tupleId] - As[tupleId];
+                if (maxAB != 0.0) {
+                    tupleSilhouette /= maxAB;
+                }
+                sum += tupleSilhouette;
+            }
+            clusterSilhouettes.add(sum/memberCount);
         }
         
-        return Optional.of(result);
+        return Optional.ofNullable(clusterSilhouettes);
     }
     
     public static OptionalDouble computeSilhouetteCoefficient(
@@ -372,11 +429,11 @@ public final class ClusterStats {
         
         double[] a = new double[numMembers];
         double[] b = new double[numMembers];
-        DistanceCache intraDistCache = null;
+        ReadOnlyDistanceCache intraDistCache = null;
         
         try {
             
-            Optional<DistanceCache> opt = computePairwiseDistances(
+            Optional<ReadOnlyDistanceCache> opt = computePairwiseDistances(
                     tuples, cluster, distanceMetric, distanceCacheFactory);
             if (!opt.isPresent()) {
                 return OptionalDouble.empty();
@@ -424,6 +481,98 @@ public final class ClusterStats {
         
         return OptionalDouble.of(sum/numMembers);
     }
+    
+    private static double[] computeAs(
+            Cluster cluster,
+            ReadOnlyDistanceCache distanceCache) throws IOException {
+        
+        final int numMembers = cluster.getMemberCount();
+        final double[] result = new double[numMembers];
+        
+        if (numMembers > 1) {
+            for (int i=0; i<numMembers-1; i++) {
+                for (int j=i+1; j<numMembers; j++) {
+                    // Use the indices for the cluster, not the indices into
+                    // tuples.
+                    double d = distanceCache.getDistance(i, j);
+                    result[i] += d;
+                    result[j] += d;
+                }
+            }
+            for (int i=0; i<numMembers; i++) {
+                result[i] /= (numMembers - 1);
+            }
+        }
+        
+        return result;
+    }
+    
+    private static double[] computeBs(
+            TupleList tuples,
+            List<Cluster> clusters,
+            int clusterId,
+            DistanceMetric distanceMetric) {
+            
+            final int[] members = clusters.get(clusterId).getMembers().toArray();
+            final double[] Bs = new double[members.length];
+            
+            final double[] tupleBuffer1 = new double[tuples.getTupleLength()];
+            final double[] tupleBuffer2 = new double[tuples.getTupleLength()];
+            
+            for (int i=0; i<members.length; i++) {
+                int tupleId = members[i];
+                int nearestClusterId = findSecondNearestCluster(
+                        tuples, clusters, tupleId, clusterId, distanceMetric
+                );
+                final Cluster nearestCluster = clusters.get(nearestClusterId);
+                final int nearestClusterMemberCount = nearestCluster.getMemberCount();
+                tuples.getTuple(tupleId, tupleBuffer1);
+                for (int j=0; j<nearestClusterMemberCount; j++) {
+                    tuples.getTuple(nearestCluster.getMember(j), tupleBuffer2);
+                    Bs[i] += distanceMetric.distance(tupleBuffer1, tupleBuffer2);
+                }
+                Bs[i] /= nearestClusterMemberCount;
+            }
+            
+            return Bs;
+    }
+    
+    private static double[] computeBs(
+            TupleList tuples,
+            List<Cluster> clusters,
+            int[] tupleIds,
+            int[] nearestClusterIds,
+            DistanceMetric distanceMetric
+    ) {
+        final double[] Bs = new double[tupleIds.length];
+        for (int i=0; i<Bs.length; i++) {
+            Bs[i] = computeB(tuples, clusters, tupleIds[i], 
+                    nearestClusterIds[i], distanceMetric);
+        }
+        return Bs;
+    }
+            
+    private static double computeB(
+            TupleList tuples, 
+            List<Cluster> clusters, 
+            int tupleId,
+            int nearestClusterId,
+            DistanceMetric distanceMetric) {
+        
+        final Cluster nearestCluster = clusters.get(nearestClusterId);
+        
+        final int numMembers = nearestCluster.getMemberCount();
+        final double[] tuple = tuples.getTuple(tupleId, null);
+        final double[] tupleBuffer = new double[tuple.length];
+        
+        double sum = 0.0;
+        for (int i=0; i<numMembers; i++) {
+            tuples.getTuple(nearestCluster.getMember(i), tupleBuffer);
+            sum += distanceMetric.distance(tuple, tupleBuffer);
+        }
+        
+        return sum/numMembers;
+    }
 
     /**
      * Computes the distances between every 2 members in a cluster. If the
@@ -436,10 +585,10 @@ public final class ClusterStats {
      *   tuples
      * @param distanceMetric the distance metric to use
      * @param distanceCacheFactory the factory for creating the distance cache
-     * @return a {@code DistanceCache} containing the pairwise distances
+     * @return a {@code ReadOnlyDistanceCache} containing the pairwise distances
      *   wrapped in an optional.
      */
-    public static Optional<DistanceCache> computePairwiseDistances(
+    public static Optional<ReadOnlyDistanceCache> computePairwiseDistances(
             TupleList tuples,
             Cluster cluster,
             DistanceMetric distanceMetric,
@@ -470,5 +619,66 @@ public final class ClusterStats {
         }
 
         return Optional.ofNullable(distanceCache);
+    }
+    
+    public static int[] findSecondNearestClusters(
+        TupleList tuples,
+        List<Cluster> clusters,
+        int[] tupleIds,
+        int[] memberShipClusterIds,
+        DistanceMetric distanceMetric) {
+
+        Objects.requireNonNull(tuples);
+        Objects.requireNonNull(clusters);
+        Objects.requireNonNull(distanceMetric);
+        Objects.requireNonNull(tupleIds);
+        Objects.requireNonNull(memberShipClusterIds);
+        
+        if (tupleIds.length != memberShipClusterIds.length) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "tupleIds.length must equal memberShipClusterIds.length: %d != %d",
+                            tupleIds.length, memberShipClusterIds.length));
+        }
+        
+        final int[] nearestClusterIds = new int[tupleIds.length];
+        
+        for (int i=0; i<tupleIds.length; i++) {
+            nearestClusterIds[i] = findSecondNearestCluster(
+                tuples, clusters, tupleIds[i], memberShipClusterIds[i],
+                    distanceMetric);
+        }
+        
+        return nearestClusterIds;
+    }
+    
+    public static int findSecondNearestCluster(
+            TupleList tuples, 
+            List<Cluster> clusters, 
+            int tupleId,
+            int memberShipClusterId,
+            DistanceMetric distanceMetric) {
+        
+        Objects.requireNonNull(tuples);
+        Objects.requireNonNull(clusters);
+        Objects.requireNonNull(distanceMetric);
+        
+        final double[] tuple = tuples.getTuple(tupleId, null);
+        final int numClusters = clusters.size();
+        
+        int nearestCluster = -1;
+        double minDistance = 0.0;
+        
+        for (int i=0; i<numClusters; i++) {
+            if (i != memberShipClusterId) {
+                double d = distanceMetric.distance(tuple, clusters.get(i).getCenter());
+                if (nearestCluster == -1 || d < minDistance) {
+                    nearestCluster = i;
+                    minDistance = d;
+                }
+            }
+        }
+        
+        return nearestCluster;
     }
 }
