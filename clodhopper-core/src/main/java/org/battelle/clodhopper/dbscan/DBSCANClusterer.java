@@ -149,19 +149,10 @@ public class DBSCANClusterer extends AbstractClusterer {
         this.tupleClassification = new DBSCANClassification(
                 coreIds, edgeIds, noiseIds);
         
-        DistanceCacheFactory distanceCacheFactory = new DistanceCacheFactory(
-            1024L*1024L*100L,
-            1024L*1024L*1024L,
-            new File(System.getProperty("java.io.tmpdir"))
-        );
-        
-        Optional<List<Double>> silhouetteScores = 
+        List<Double> scores = 
                 ClusterStats.computeSilhouetteCoefficients(
-                        tuples, clusters, params.getDistanceMetric(), 
-                        distanceCacheFactory);
+                        tuples, clusters, params.getDistanceMetric());
         
-        if (silhouetteScores.isPresent()) {
-            List<Double> scores = silhouetteScores.get();
             postMessage("Clusters received the following silhouette scores:");
             int memberCount = 0;
             double weightedSum = 0;
@@ -177,7 +168,6 @@ public class DBSCANClusterer extends AbstractClusterer {
             if (memberCount > 0) {
                 postMessage("  Overall score: " + weightedSum/memberCount);
             }
-        }
         
         return clusters;
     }

@@ -8,6 +8,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -294,114 +296,152 @@ public final class ClusterStats {
         return nearestCluster;
     }
 
-    public static Optional<List<Double>> computeSilhouetteCoefficients(
+    private static CompletableFuture<double[]> computeAsAsync(
+            final TupleList tuples,
+            final Cluster cluster,
+            final DistanceMetric distanceMetric) {
+        
+        return CompletableFuture.supplyAsync(() -> {
+            return computeAs(tuples, cluster, distanceMetric);
+        });
+    }
+    
+    private static CompletableFuture<double[]> computeBsAsync(
+            final TupleList tuples,
+            final List<Cluster> clusters,
+            final int clusterId,
+            final DistanceMetric distanceMetric
+    ) {
+        return CompletableFuture.supplyAsync(() -> {
+           return computeBs(tuples, clusters, clusterId, distanceMetric); 
+        });
+    }
+    
+    private static CompletableFuture<Double> computeSilhouetteCoefficientAsync(
+            final double[] clusterMemberAs,
+            final double[] clusterMemberBs
+    ) {
+        return CompletableFuture.supplyAsync(() -> {
+            final int numMembers = clusterMemberAs.length;
+            double sum = 0.0;
+            for (int i=0; i<numMembers; i++) {
+                double memberA = clusterMemberAs[i];
+                double memberB = clusterMemberBs[i];
+                double max = Math.max(memberA, memberB);
+                double memberS = max != 0.0 ? (memberB - memberA)/max : 0.0;
+                sum += memberS;
+            }
+            return sum/numMembers;
+        });
+    }
+    
+    public static List<Double> computeSilhouetteCoefficients(
             TupleList tuples,
             List<Cluster> clusters,
-            DistanceMetric distanceMetric,
-            DistanceCacheFactory distanceCacheFactory) throws IOException {
+            DistanceMetric distanceMetric) throws ClusteringException {
 
         Objects.requireNonNull(tuples);
         Objects.requireNonNull(clusters);
         Objects.requireNonNull(distanceMetric);
-        Objects.requireNonNull(distanceCacheFactory);
         
-        final int numTuples = tuples.getTupleCount();
         final int numClusters = clusters.size();
-        final double[] As = new double[numTuples];
-        final double[] Bs = new double[numTuples];
-        
-        final int numThreads = Runtime.getRuntime().availableProcessors();
-        
-        ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
-        
-        List<Double> result = null;
         
         try {
-            
-            List<Callable<double[]>> aCallables = new ArrayList<>(clusters.size());
-            
-            for (Cluster c: clusters) {
-                aCallables.add(() -> {
-                        ReadOnlyDistanceCache distanceCache = null;
-                        try {
-                        DistanceMetric dm = distanceMetric.clone();
-                        Optional<ReadOnlyDistanceCache> opt = computePairwiseDistances(
-                                tuples, c, dm, 
-                                distanceCacheFactory);
-                        distanceCache = opt.orElse(
-                                new FakeDistanceCache(
-                                        new FilteredTupleList(
-                                                c.getMembers().toArray(), 
-                                                tuples), 
-                                        dm)
-                        );
-                        return computeAs(c, distanceCache);
-                        } finally {
-                            if (distanceCache instanceof FileDistanceCache) {
-                                FileDistanceCache fdc = (FileDistanceCache) distanceCache;
-                                fdc.closeFile();
-                                fdc.getFile().delete();
-                            }
-                        }
-                });
-            }
-            
-            List<Future<double[]>> aFutures = executorService.invokeAll(aCallables);
-            
-            for (int i=0; i<numClusters; i++) {
-                Cluster c = clusters.get(i);
-                final double[] clusterAs = aFutures.get(i).get();
-                final int numMembers = c.getMemberCount();
-                for (int j=0; j<numMembers; j++) {
-                    As[c.getMember(j)] = clusterAs[j];
-                }
-            }
-            
-            List<Callable<double[]>> bCallables = new ArrayList<>(numClusters);
-            
-            for (int i=0; i<numClusters; i++) {
-                final int clusterId = i;
-                bCallables.add(() -> {
-                    return computeBs(tuples, clusters, clusterId, distanceMetric.clone());
-                });
-            }
-            
-            List<Future<double[]>> bFutures = executorService.invokeAll(bCallables);
-            
-            for (int i=0; i<numClusters; i++) {
-                Cluster c = clusters.get(i);
-                final double[] clusterBs = bFutures.get(i).get();
-                final int numMembers = c.getMemberCount();
-                for (int j=0; j<numMembers; j++) {
-                    Bs[c.getMember(j)] = clusterBs[j];
-                }
-            }
-            
-        } catch (Exception e) {
-            
-        } finally {
-            if (executorService != null) {
-                executorService.shutdownNow();
-            }
-        }
         
-        List<Double> clusterSilhouettes = new ArrayList<>(numClusters);
-        for (Cluster c: clusters) {
-            final int memberCount = c.getMemberCount();
-            double sum = 0.0;
-            for (int i=0; i<memberCount; i++) {
-                final int tupleId = c.getMember(i);
-                final double maxAB = Math.max(As[tupleId], Bs[tupleId]);
-                double tupleSilhouette = Bs[tupleId] - As[tupleId];
-                if (maxAB != 0.0) {
-                    tupleSilhouette /= maxAB;
-                }
-                sum += tupleSilhouette;
+            // Will contain ones for computes both As and Bs for the
+            // members of each cluster. They'll be in the order: a, b, a, b, ...
+            List<CompletableFuture<double[]>> abFutures = new ArrayList<>(2*numClusters);
+            
+            for (int i=0; i<numClusters; i++) {
+                // Use clones of the distance metrics, since they're not
+                // threadsafe.
+                abFutures.add(computeAsAsync(tuples, clusters.get(i), distanceMetric.clone()));
+                abFutures.add(computeBsAsync(tuples, clusters, i, distanceMetric.clone()));
             }
-            clusterSilhouettes.add(sum/memberCount);
-        }
+            
+            CompletableFuture<Void> abFuturesAll = CompletableFuture.allOf(
+                abFutures.toArray(new CompletableFuture[abFutures.size()]));
         
-        return Optional.ofNullable(clusterSilhouettes);
+            CompletableFuture<List<double[]>> abFuturesResult = abFuturesAll.thenApply(
+                v -> {
+                    return abFutures.stream()
+                            .map(f -> f.join())
+                            .collect(Collectors.toList());
+                }
+            );
+        
+            final List<double[]> clusterABs = abFuturesResult.get();        
+                  
+            List<CompletableFuture<Double>> sFutures = new ArrayList<>(numClusters);
+            for (int i=0; i<clusterABs.size(); i+=2) {
+                sFutures.add(computeSilhouetteCoefficientAsync(
+                        clusterABs.get(i), clusterABs.get(i+1)));
+            }
+            
+            CompletableFuture<Void> sFuturesAll = CompletableFuture.allOf(
+                    sFutures.toArray(new CompletableFuture[sFutures.size()]));
+            
+            CompletableFuture<List<Double>> sFuturesResult = sFuturesAll.thenApply(
+                    v -> {
+                        return sFutures.stream().map(f -> f.join()).collect(Collectors.toList());
+                    }
+            );
+            
+            return sFuturesResult.get();
+            
+        } catch (ExecutionException | InterruptedException e) {
+            throw new ClusteringException("error computing silhouette coefficients", e);
+        }
+
+//        
+//            
+//            List<Callable<double[]>> bCallables = new ArrayList<>(numClusters);
+//            
+//            for (int i=0; i<numClusters; i++) {
+//                final int clusterId = i;
+//                bCallables.add(() -> {
+//                    return computeBs(tuples, clusters, clusterId, distanceMetric.clone());
+//                });
+//            }
+//            
+//            List<Future<double[]>> bFutures = executorService.invokeAll(bCallables);
+//            
+//            for (int i=0; i<numClusters; i++) {
+//                Cluster c = clusters.get(i);
+//                final double[] clusterBs = bFutures.get(i).get();
+//                final int numMembers = c.getMemberCount();
+//                for (int j=0; j<numMembers; j++) {
+//                    Bs[c.getMember(j)] = clusterBs[j];
+//                }
+//            }
+//            
+//        } catch (Exception e) {
+//            
+//        } finally {
+//            if (executorService != null) {
+//                executorService.shutdownNow();
+//            }
+//        }
+//        
+//        List<Double> clusterSilhouettes = new ArrayList<>(numClusters);
+//        for (Cluster c: clusters) {
+//            final int memberCount = c.getMemberCount();
+//            double sum = 0.0;
+//            for (int i=0; i<memberCount; i++) {
+//                final int tupleId = c.getMember(i);
+//                final double maxAB = Math.max(As[tupleId], Bs[tupleId]);
+//                double tupleSilhouette = Bs[tupleId] - As[tupleId];
+//                if (maxAB != 0.0) {
+//                    tupleSilhouette /= maxAB;
+//                }
+//                sum += tupleSilhouette;
+//            }
+//            clusterSilhouettes.add(sum/memberCount);
+//        }
+//        
+//        return Optional.ofNullable(clusterSilhouettes);
+
+//        return Optional.empty();
     }
     
     public static OptionalDouble computeSilhouetteCoefficient(
@@ -482,6 +522,34 @@ public final class ClusterStats {
         return OptionalDouble.of(sum/numMembers);
     }
     
+    private static double[] computeAs(
+            TupleList tuples,
+            Cluster cluster,
+            DistanceMetric distanceMetric) {
+        
+        final int numMembers = cluster.getMemberCount();
+        final double[] result = new double[numMembers];
+        
+        if (numMembers > 1) {
+            final double[] tupleBuffer1 = new double[tuples.getTupleLength()];
+            final double[] tupleBuffer2 = new double[tuples.getTupleLength()];
+            for (int i=0; i<numMembers-1; i++) {
+                tuples.getTuple(cluster.getMember(i), tupleBuffer1);
+                for (int j=i+1; j<numMembers; j++) {
+                    tuples.getTuple(cluster.getMember(j), tupleBuffer2);
+                    double d = distanceMetric.distance(tupleBuffer1, tupleBuffer2);
+                    result[i] += d;
+                    result[j] += d;
+                }
+            }
+            for (int i=0; i<numMembers; i++) {
+                result[i] /= (numMembers - 1);
+            }
+        }
+        
+        return result;
+    }
+
     private static double[] computeAs(
             Cluster cluster,
             ReadOnlyDistanceCache distanceCache) throws IOException {
