@@ -392,7 +392,7 @@ public class ClodHopperUI extends JFrame implements SelectionListener {
                     }
                 } else if (outcome == TaskOutcome.ERROR) {
                     popupTitle = "Error Opening Tuples";
-                    popupMessage = tupleReader.getErrorMessage();
+                    popupMessage = tupleReader.getErrorMessage().orElse("reason unknown");
                 } else if (outcome == TaskOutcome.CANCELLED) {
                     popupTitle = "Canceled";
                     popupMessage = "Loading of tuples was canceled.";
@@ -792,10 +792,10 @@ public class ClodHopperUI extends JFrame implements SelectionListener {
             } else if (outcome == TaskOutcome.ERROR) {
 
                 if (task instanceof Clusterer) {
-                    popupMessage = task.getErrorMessage();
+                    popupMessage = task.getErrorMessage().orElse("reason unknown");
                     popupTitle = "Error Clustering";
                 } else if (task instanceof Projector) {
-                    popupMessage = task.getErrorMessage();
+                    popupMessage = task.getErrorMessage().orElse("reason unknown");
                     popupTitle = "Error Projecting";
                 }
 

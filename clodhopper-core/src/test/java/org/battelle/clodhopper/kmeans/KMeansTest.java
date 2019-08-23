@@ -94,7 +94,7 @@ public class KMeansTest {
 		}
 		
 		if (kmeans.getTaskOutcome() == TaskOutcome.ERROR) {
-			Throwable t = kmeans.getError();
+			Throwable t = kmeans.getError().orElse(null);
 			if (t != null) {
 				System.out.println(t.toString());
 			}

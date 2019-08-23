@@ -20,15 +20,19 @@ import java.util.Objects;
 import org.battelle.clodhopper.tuple.TupleList;
 
 /**
- * 
+ * A {@code ReadOnlyDistanceCache} implementation the does not actually cache
+ * distances. Instead, it wraps a {@code TupleList} and {@code DistanceMetric}
+ * and computes them as necessary. This may be useful when there are too many
+ * pairwise distances to cache either in memory or in a file, but when you
+ * still need distance cache semantics.
  * @author R.Scarberry
  */
-public class FakeDistanceCache implements ReadOnlyDistanceCache {
+public class FakeReadOnlyDistanceCache implements ReadOnlyDistanceCache {
     
     private final TupleList tuples;
     private final DistanceMetric distanceMetric;
     
-    public FakeDistanceCache(TupleList tuples, DistanceMetric distanceMetric) {
+    public FakeReadOnlyDistanceCache(TupleList tuples, DistanceMetric distanceMetric) {
         Objects.requireNonNull(tuples, "tuples is required");
         Objects.requireNonNull(distanceMetric, "distanceMetric is required");
         this.tuples = tuples;

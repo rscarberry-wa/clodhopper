@@ -3,6 +3,7 @@ package org.battelle.clodhopper.xmeans;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.battelle.clodhopper.AbstractClusterSplitter;
 import org.battelle.clodhopper.Cluster;
@@ -188,8 +189,11 @@ public class XMeansClusterSplitter extends AbstractClusterSplitter {
         	LOGGER.error(String.format("kmeans outcome = %s\n", kmeans.getTaskOutcome()));
         	
         	if (kmeans.getTaskOutcome() == TaskOutcome.ERROR) {
-        		Throwable t = kmeans.getError(); 
+                    Optional<Throwable> tOpt = kmeans.getError();
+                    if (tOpt.isPresent()) {
+        		Throwable t = tOpt.get(); 
         		LOGGER.error("kmeans error", t);
+                    }
         	}
         	
         }

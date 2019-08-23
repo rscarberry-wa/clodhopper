@@ -116,8 +116,8 @@ public class MindlessDemo {
       
     } else if (mindless.getTaskOutcome() == TaskOutcome.ERROR) {
       
-      Throwable t = mindless.getError();
-      String errMsg = mindless.getErrorMessage();
+      Throwable t = mindless.getError().orElse(null);
+      String errMsg = mindless.getErrorMessage().orElse("unknown error");
       
       System.out.printf("Mindless clustering ended with error: %s", errMsg);
       

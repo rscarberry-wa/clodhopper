@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
@@ -69,7 +70,7 @@ public class KMeansClusterer extends AbstractClusterer {
     private int[] clusterAssignments;
     // Manages the subtasks performed by workers running in parallel
     private SubtaskManager subtaskManager;
-	// To keep track of past states of the protoClusters to prevent getting caught in
+    // To keep track of past states of the protoClusters to prevent getting caught in
     // an infinite loop near the end of clustering when replacing clusters that become empty.
     private Set<ProtoClusterState> pastStates;
 
@@ -132,26 +133,26 @@ public class KMeansClusterer extends AbstractClusterer {
             if (actualClusterCount == 1) {
 
                 ProtoCluster cluster = protoClusters[0];
-              
+
                 // Add them all to the protocluster.
                 cluster.ensureCurrentCapacity(tupleCount);
                 for (int i = 0; i < tupleCount; i++) {
                     cluster.add(i);
                 }
-                
+
                 cluster.updateCenter(tuples);
 
             } else {
 
                 // Determine the number of worker threads for concurrent subtasks.
-                final int workerCount = params.getWorkerThreadCount() > 0 ? 
-                    params.getWorkerThreadCount() : Runtime.getRuntime().availableProcessors();
+                final int workerCount = params.getWorkerThreadCount() > 0
+                        ? params.getWorkerThreadCount() : Runtime.getRuntime().availableProcessors();
 
                 subtaskManager = new SubtaskManager(workerCount);
 
                 // Keeps a running count of the cluster assignments.
                 clusterAssignments = new int[tupleCount];
-                
+
                 // -1 is a flag indicator meaning unassigned.
                 Arrays.fill(clusterAssignments, -1);
 
@@ -238,9 +239,9 @@ public class KMeansClusterer extends AbstractClusterer {
                     }
 
                     if (moves <= movesGoal || iteration >= iterationLimit || oscillationDetected) {
-                        
+
                         emptyClustersReplaced = params.getReplaceEmptyClusters() && replaceEmptyClusters(ph);
-                        
+
                         if (emptyClustersReplaced) {
 
                             oscillationDetectionOn = false;
@@ -296,11 +297,12 @@ public class KMeansClusterer extends AbstractClusterer {
     }
 
     /**
-     * Called at the beginning of clustering to choose the initial cluster centers using the cluster seeder.
-     * The method may reduce the number of initial clusters below the requested cluster count if too few
-     * unique tuples are present.
-     * 
-     * @param ph 
+     * Called at the beginning of clustering to choose the initial cluster
+     * centers using the cluster seeder. The method may reduce the number of
+     * initial clusters below the requested cluster count if too few unique
+     * tuples are present.
+     *
+     * @param ph
      */
     private void initializeCenters(ProgressHandler ph) {
 
@@ -313,7 +315,7 @@ public class KMeansClusterer extends AbstractClusterer {
         // There is no point in requesting more clusters than there are unique tuples.
         if (clusterCount > uniqueTupleCount) {
             ph.postMessage(String.format("reducing requested number of clusters from %d to %d, the number of unique tuples",
-                clusterCount, uniqueTupleCount));
+                    clusterCount, uniqueTupleCount));
             clusterCount = uniqueTupleCount;
         }
 
@@ -333,7 +335,8 @@ public class KMeansClusterer extends AbstractClusterer {
     }
 
     /**
-     * Called every iteration to make cluster assignments. 
+     * Called every iteration to make cluster assignments.
+     *
      * @return the number of moves.
      */
     private int makeAssignments() {
@@ -366,11 +369,12 @@ public class KMeansClusterer extends AbstractClusterer {
     }
 
     /**
-     * If, at the end of clustering, some clusters have become empty, replace the empty clusters by splitting
-     * the loosest clusters. Only called if replaceEmptyClusters is true in the clustering parameters.
-     * 
+     * If, at the end of clustering, some clusters have become empty, replace
+     * the empty clusters by splitting the loosest clusters. Only called if
+     * replaceEmptyClusters is true in the clustering parameters.
+     *
      * @param ph
-     * @return 
+     * @return
      */
     private boolean replaceEmptyClusters(ProgressHandler ph) {
 
@@ -421,12 +425,12 @@ public class KMeansClusterer extends AbstractClusterer {
                 }
             }
 
-			// Sort the indexes of the non-empty clusters by their BICs.  The ones at the
+            // Sort the indexes of the non-empty clusters by their BICs.  The ones at the
             // bottom will be the best candidates to be split.
             Sorting.quickSort(indexes, (n1, n2) -> {
-                    double bic1 = bics[n1];
-                    double bic2 = bics[n2];
-                    return bic1 < bic2 ? -1 : bic1 > bic2 ? 1 : 0;
+                double bic1 = bics[n1];
+                double bic2 = bics[n2];
+                return bic1 < bic2 ? -1 : bic1 > bic2 ? 1 : 0;
             });
 
             count = 0;
@@ -466,10 +470,10 @@ public class KMeansClusterer extends AbstractClusterer {
 
     /**
      * Split a cluster in two. Used in replacing empty clusters.
-     * 
+     *
      * @param cluster
      * @param ph
-     * @return 
+     * @return
      */
     private ProtoCluster[] split(ProtoCluster cluster, ProgressHandler ph) {
 
@@ -520,9 +524,10 @@ public class KMeansClusterer extends AbstractClusterer {
 
             String errorMessage = null;
 
-            Throwable t = splitter.getError();
+            Optional<Throwable> tOpt = splitter.getError();
 
-            if (t != null) {
+            if (tOpt.isPresent()) {
+                Throwable t = tOpt.get();
                 errorMessage = t.getMessage();
                 if (errorMessage == null || errorMessage.length() == 0) {
                     errorMessage = t.getClass().getSimpleName() + " was thrown";
@@ -546,7 +551,7 @@ public class KMeansClusterer extends AbstractClusterer {
 
         tuples.getTuple(tupleNdx, buffer);
 
-		// If the last cluster to which the tuple was assigned did not change in the previous
+        // If the last cluster to which the tuple was assigned did not change in the previous
         // iteration, performance is enormously enhanced by only considering the distance to it and
         // to the clusters that changed in the previous iteration.  The clusters that did not change
         // lost out to lastCluster before and they haven't moved any closer.
@@ -581,12 +586,12 @@ public class KMeansClusterer extends AbstractClusterer {
     }
 
     /**
-     * Iterates in reverse through the moves made in successive iterations to detect if clustering is
-     * oscillating between states.
-     * 
+     * Iterates in reverse through the moves made in successive iterations to
+     * detect if clustering is oscillating between states.
+     *
      * @param moveLists
-     * 
-     * @return 
+     *
+     * @return
      */
     private boolean hasOscillation(List<List<Move>> moveLists) {
 
@@ -660,9 +665,9 @@ public class KMeansClusterer extends AbstractClusterer {
     }
 
     /**
-     * SubtaskManager manages the concurrent execution of two phases of K-Means clustering: 
-     * 1) making the cluster assignments, and 
-     * 2) recomputing cluster centers.
+     * SubtaskManager manages the concurrent execution of two phases of K-Means
+     * clustering: 1) making the cluster assignments, and 2) recomputing cluster
+     * centers.
      */
     private class SubtaskManager {
 
@@ -680,15 +685,15 @@ public class KMeansClusterer extends AbstractClusterer {
             // Wouldn't make sense to have more workers making assignment concurrently than there are tuples.
             // Some would have nothing to do.
             final int assignmentWorkerCount = Math.min(workerCount, tupleCount);
-            
+
             // Collect the actual # of tuples for each worker in an array.
             int[] tuplesPerAssignmentWorker = new int[assignmentWorkerCount];
 
-            Arrays.fill(tuplesPerAssignmentWorker, tupleCount/assignmentWorkerCount);
+            Arrays.fill(tuplesPerAssignmentWorker, tupleCount / assignmentWorkerCount);
 
             // tupleCount might not have been evenly divisible by assignmentWorkerCount. Some workers will handle
             // 1 more tuple than others.
-            int leftOver = tupleCount%assignmentWorkerCount;
+            int leftOver = tupleCount % assignmentWorkerCount;
             for (int i = 0; i < leftOver; i++) {
                 tuplesPerAssignmentWorker[i]++;
             }
@@ -705,9 +710,9 @@ public class KMeansClusterer extends AbstractClusterer {
             // Similar logic for the center computation workers.
             final int centerCompWorkerCount = Math.min(workerCount, clusterCount);
             int[] clustersPerCenterCompWorker = new int[centerCompWorkerCount];
-            Arrays.fill(clustersPerCenterCompWorker, clusterCount/centerCompWorkerCount);
+            Arrays.fill(clustersPerCenterCompWorker, clusterCount / centerCompWorkerCount);
 
-            leftOver = clusterCount%centerCompWorkerCount;
+            leftOver = clusterCount % centerCompWorkerCount;
             for (int i = 0; i < leftOver; i++) {
                 clustersPerCenterCompWorker[i]++;
             }
@@ -821,7 +826,8 @@ public class KMeansClusterer extends AbstractClusterer {
         }
 
         /**
-         * The worker class that makes cluster assignments for a range of tuples.
+         * The worker class that makes cluster assignments for a range of
+         * tuples.
          */
         private class AssignmentWorker implements Callable<Void> {
 
@@ -908,7 +914,7 @@ public class KMeansClusterer extends AbstractClusterer {
             return result;
         }
 
-	    // This method must be synchronized, since it will be called from multiple threads by
+        // This method must be synchronized, since it will be called from multiple threads by
         // the AssignmentWorkers.
         private synchronized void add(int newMember) {
             ensureCurrentCapacity(currentSize + 1);
@@ -946,8 +952,8 @@ public class KMeansClusterer extends AbstractClusterer {
         }
 
         /**
-         * Called before each round of new cluster assignments, so it can be detected 
-         * whether or not the cluster changed during the iteration.
+         * Called before each round of new cluster assignments, so it can be
+         * detected whether or not the cluster changed during the iteration.
          */
         private void checkPoint() {
             previousMembers = new int[currentSize];
@@ -967,7 +973,7 @@ public class KMeansClusterer extends AbstractClusterer {
         }
 
         /**
-         * Reduce the length of currentMembers to currentSize and sort the 
+         * Reduce the length of currentMembers to currentSize and sort the
          * indexes contained therein.
          */
         private void trimToSizeAndSort() {
@@ -1022,14 +1028,14 @@ public class KMeansClusterer extends AbstractClusterer {
             //
             Sorting.quickSort(clusterIndexes, (n1, n2) -> {
 
-                    ProtoCluster c1 = protoClusters[n1];
-                    ProtoCluster c2 = protoClusters[n2];
+                ProtoCluster c1 = protoClusters[n1];
+                ProtoCluster c2 = protoClusters[n2];
 
-                    int min1 = c1.isEmpty() ? Integer.MAX_VALUE : c1.currentMembers[0];
-                    int min2 = c2.isEmpty() ? Integer.MAX_VALUE : c2.currentMembers[0];
+                int min1 = c1.isEmpty() ? Integer.MAX_VALUE : c1.currentMembers[0];
+                int min2 = c2.isEmpty() ? Integer.MAX_VALUE : c2.currentMembers[0];
 
-                    return min1 < min2 ? -1 : min1 > min2 ? 1 : 0;
-                }
+                return min1 < min2 ? -1 : min1 > min2 ? 1 : 0;
+            }
             );
 
             this.members = new int[totalMemberCount];

@@ -1,5 +1,6 @@
 package org.battelle.clodhopper.task;
 
+import java.util.Optional;
 import java.util.concurrent.RunnableFuture;
 
 /*=====================================================================
@@ -32,12 +33,12 @@ import java.util.concurrent.RunnableFuture;
  *===================================================================*/
 
 /**
- * <p>The <code>Task</code> class is an interface defining objects 
+ * <p>The {@code Task } class is an interface defining objects 
  * that perform time-consuming chores while notifying listeners of their progress.  
- * Since it implements <code>java.lang.Runnable</code>, implementations are typically 
+ * Since it implements {@code java.lang.Runnable}, implementations are typically 
  * meant to be executed on dedicated threads, although they do not have to be.
- * However, <code>Task</code> provides status reporting
- * (messages and progress) and, since it extends <code>Future</code>, 
+ * However, {@code Task} provides status reporting
+ * (messages and progress) and, since it extends {@code Future}, 
  * the ability to cancel before it is finished.</p>
  *
  * <p>Copyright: Copyright (c) 2005</p>
@@ -51,22 +52,22 @@ import java.util.concurrent.RunnableFuture;
 public interface Task<V> extends RunnableFuture<V> {
 
     /**
-     * Add a listener to the receiver's list of <code>TaskListener</code>s.  
+     * Add a listener to the receiver's list of {@code TaskListener}s.  
      * The listener is normally added before the thread executing the task is started.  As
      * the task executes, registered listeners receive event notifications
      * when the task starts, when it ends, and receive messages and progress 
      * in between.
-     * @param listener - an object which implements <code>TaskListener</code>.
+     * @param listener - an object which implements {@code TaskListener}.
      */
-    public void addTaskListener(TaskListener listener);
+    void addTaskListener(TaskListener listener);
 
     /**
      * Remove a registered listener.  Normally called after the task is
      * finished.
-     * @param listener - a <code>TaskListener</code> previously added via
-     * <code>addTaskListener(l)</code>.
+     * @param listener - a {@code TaskListener} previously added via
+     * {@code addTaskListener(l)}.
      */
-    public void removeTaskListener(TaskListener listener);
+    void removeTaskListener(TaskListener listener);
 
     /**
      * Called after the task completes to get the outcome of the task.  Possible
@@ -80,43 +81,44 @@ public interface Task<V> extends RunnableFuture<V> {
      * </ul>
      * @return TaskOutcome
      */
-    public TaskOutcome getTaskOutcome();
+    TaskOutcome getTaskOutcome();
     
     /**
      * Returns true if the task has begun, false otherwise.
      * @return boolean
      */
-    public boolean isBegun();
+    boolean isBegun();
 
     /**
      * Returns true if the task has finished, false otherwise.
      * @return boolean
      */
-    public boolean isEnded();
+    boolean isEnded();
 
     /**
      * Returns the error message associated with an outcome of TaskOutcome.ERROR.
-     * Returns null if the outcome is anything else or if the task is not
-     * finished.
      * 
-     * @return String
+     * @return an {@code Optional} wrapping the error message if the task
+     *   ended with an error. This will be empty if the task ended without an
+     *   error or the task has not finished.
      */
-    public String getErrorMessage();
+    Optional<String> getErrorMessage();
     
     /**
-     * Returns the Throwable associated with an outcome of TaskOutcome.ERROR.
-     * Returns null if the task is either not finished or did not finish with
-     * an error.
+     * Returns the {@code Throwable} associated with an outcome of 
+     * TaskOutcome.ERROR. 
      * 
-     * @return an instance of a <code>Throwable</code> or null, if no error occurred.
+     * @return an instance of a {@code Throwable} wrapped by an
+     *   {@code Optional}. The optional will be empty if the task has not
+     *   finished or no error occurred.
      */
-    public Throwable getError();
+    Optional<Throwable> getError();
 
     /**
      * Get the current progress.
      * @return double
      */
-    public double getProgress();
+    double getProgress();
 
     /**
      * Set the beginning and ending progress endpoints.  This method should be
@@ -125,37 +127,37 @@ public interface Task<V> extends RunnableFuture<V> {
      * @param begin - the beginning progress.
      * @param end - the ending progress.
      */
-    public void setProgressEndpoints(double begin, double end);        
+    void setProgressEndpoints(double begin, double end);        
 
     /**
      * Resets the task, so it can be repeated.  
      * @exception IllegalStateException if the task is currently running. 
      *   (isBegun() returns true and isEnded() returns false.)
      */
-    public void reset();
+    void reset();
 
     /**
      * Implementations define this method, so the beginning and ending events
      * will carry a descriptive label.
      * @return String
      */
-    public String taskName();
+    String taskName();
     
     /**
      * Call to pause a running task.  Does nothing if the task
      * is not running or is already paused.
      */
-    public void pause();
+    void pause();
     
     /**
      * Returns true if the task has been paused, false otherwise.
      * @return true if paused, false otherwise.
      */
-    public boolean isPaused();
+    boolean isPaused();
     
     /**
      * Resume a task that has been paused.
      */
-    public void play();
+    void play();
 
 }
