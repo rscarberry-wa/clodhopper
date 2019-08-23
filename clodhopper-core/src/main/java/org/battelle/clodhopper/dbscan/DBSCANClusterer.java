@@ -28,7 +28,7 @@ public class DBSCANClusterer extends AbstractClusterer {
 
     private TupleList tuples;
     private DBSCANParams params;
-    
+
     private DBSCANClassification tupleClassification;
 
     public DBSCANClusterer(final TupleList tuples, final DBSCANParams params) {
@@ -58,12 +58,12 @@ public class DBSCANClusterer extends AbstractClusterer {
         final int minPoints = params.getMinSamples() - 1;
 
         int clusterNum = 0;
-        
+
         TIntSet noiseIds = new TIntHashSet();
         TIntSet edgeIds = new TIntHashSet();
         TIntSet coreIds = new TIntHashSet();
 
-        for (int i=0; i<tupleCount; i++) {
+        for (int i = 0; i < tupleCount; i++) {
             if (clusterAssignments[i] == UNASSIGNED) {
                 int[] neighbors = kdTree.closeTo(i, epsilon);
                 if (neighbors.length < minPoints) {
@@ -79,7 +79,7 @@ public class DBSCANClusterer extends AbstractClusterer {
                     // Had sufficient points to make a new cluster.
                     clusterAssignments[i] = clusterNum;
                     // The size of the list may grow during execution of the loop.
-                    for (int j=0; j<neighborList.size(); j++) {
+                    for (int j = 0; j < neighborList.size(); j++) {
                         int nbr = neighborList.get(j);
                         if (clusterAssignments[nbr] == NOISE) {
                             // It's not noise after all, but an edge point on the cluster.
@@ -93,7 +93,7 @@ public class DBSCANClusterer extends AbstractClusterer {
                             if (moreNeighbors.length >= minPoints) {
                                 // It has sufficient number of neighbors to be core.
                                 coreIds.add(nbr);
-                                for (int k=0; k<moreNeighbors.length; k++) {
+                                for (int k = 0; k < moreNeighbors.length; k++) {
                                     int nbr2 = moreNeighbors[k];
                                     if (!neighborSet.contains(nbr2)) {
                                         neighborSet.add(nbr2);
@@ -109,66 +109,75 @@ public class DBSCANClusterer extends AbstractClusterer {
                 }
             }
         }
-        
+
         List<TIntArrayList> clusterMemberships = new ArrayList<>(clusterNum);
-        for (int i=0; i<clusterNum; i++) {
+        for (int i = 0; i < clusterNum; i++) {
             clusterMemberships.add(new TIntArrayList());
         }
-        
+
         // Single tuple clusters for the noise points.
         List<Cluster> noiseClusters = new ArrayList<>();
-        
+
         final TIntSet noisePoints = new TIntHashSet();
-        
-        for (int i=0; i<tupleCount; i++) {
+
+        for (int i = 0; i < tupleCount; i++) {
             int assignment = clusterAssignments[i];
             if (assignment >= 0) {
                 clusterMemberships.get(assignment).add(i);
             } else {
                 assert assignment == NOISE;
                 noiseClusters.add(
-                    new Cluster(new int[] { i }, tuples.getTuple(i, null))
+                        new Cluster(new int[]{i}, tuples.getTuple(i, null))
                 );
-                noisePoints.add(i); 
+                noisePoints.add(i);
             }
         }
-        
+
         List<Cluster> clusters = new ArrayList<>(
                 clusterNum + noiseClusters.size());
-        
-        for (TIntArrayList memberList: clusterMemberships) {
+
+        for (TIntArrayList memberList : clusterMemberships) {
             memberList.trimToSize();
             int[] members = memberList.toArray();
             Arrays.sort(members);
             double[] center = TupleMath.average(tuples, new ArrayIntIterator(members));
             clusters.add(new Cluster(members, center));
         }
-        
+
         clusters.addAll(noiseClusters);
-        
+
         this.tupleClassification = new DBSCANClassification(
                 coreIds, edgeIds, noiseIds);
+
         
-        List<Double> scores = 
-                ClusterStats.computeSilhouetteCoefficients(
+        long msStart2 = System.currentTimeMillis();
+        List<Double> scores2 = ClusterStats.computeSilhouetteCoefficientsSequentially(
+                tuples, clusters, params.getDistanceMetric());
+        long ms2 = System.currentTimeMillis() - msStart2;
+        
+        long msStart1 = System.currentTimeMillis();
+        List<Double> scores
+                = ClusterStats.computeSilhouetteCoefficients(
                         tuples, clusters, params.getDistanceMetric());
+        long ms1 = System.currentTimeMillis() - msStart1;
+
+        postMessage(String.format("Clusters received the following silhouette scores: (%d ms, %d ms)", ms1, ms2));
         
-            postMessage("Clusters received the following silhouette scores:");
-            int memberCount = 0;
-            double weightedSum = 0;
-            for (int i=0; i<clusters.size(); i++) {
-                Cluster c = clusters.get(i);
-                if (c.getMemberCount() == 1) {
-                    break;
-                }
-                postMessage(String.format("\t%d: %f", i+1, scores.get(i).doubleValue()));
-                weightedSum += scores.get(i).doubleValue() * c.getMemberCount();
-                memberCount += c.getMemberCount();
+        int memberCount = 0;
+        double weightedSum = 0;
+        for (int i = 0; i < clusters.size(); i++) {
+            Cluster c = clusters.get(i);
+            if (c.getMemberCount() == 1) {
+                break;
             }
-            if (memberCount > 0) {
-                postMessage("  Overall score: " + weightedSum/memberCount);
-            }
-        
+            postMessage(String.format("\t%d: %f, %f", i + 1, scores.get(i).doubleValue(), scores2.get(i).doubleValue()));
+            weightedSum += scores.get(i).doubleValue() * c.getMemberCount();
+            memberCount += c.getMemberCount();
+        }
+        if (memberCount > 0) {
+            postMessage("  Overall score: " + weightedSum / memberCount);
+        }
+
         return clusters;
     }
 
@@ -176,7 +185,7 @@ public class DBSCANClusterer extends AbstractClusterer {
     public String taskName() {
         return "DBSCAN clustering";
     }
-    
+
     public Optional<DBSCANClassification> getTupleClassification() {
         return Optional.ofNullable(this.tupleClassification);
     }

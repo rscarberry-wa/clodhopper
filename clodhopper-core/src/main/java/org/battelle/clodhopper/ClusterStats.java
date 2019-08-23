@@ -5,24 +5,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
-import org.battelle.clodhopper.distance.DistanceCache;
-import org.battelle.clodhopper.distance.DistanceCacheFactory;
 import org.battelle.clodhopper.distance.DistanceMetric;
-import org.battelle.clodhopper.distance.FakeDistanceCache;
-import org.battelle.clodhopper.distance.FileDistanceCache;
-import org.battelle.clodhopper.distance.RAMDistanceCache;
 import org.battelle.clodhopper.distance.ReadOnlyDistanceCache;
-import org.battelle.clodhopper.tuple.FilteredTupleList;
-
 import org.battelle.clodhopper.tuple.TupleList;
 import org.battelle.clodhopper.tuple.TupleMath;
 
@@ -254,14 +243,14 @@ public final class ClusterStats {
     }
 
     /**
-     * Find the nearest cluster in the list of clusters to the
-     * specified cluster.
+     * Find the nearest cluster in the list of clusters to the specified
+     * cluster.
      *
      * @param clusters a list of clusters which cannot be null or of length less
-     *   than 2
-     * @param cluster a member of the list of clusters 
+     * than 2
+     * @param cluster a member of the list of clusters
      * @param distanceMetric the distance metric to use, which must also not be
-     *   null
+     * null
      * @return nearest cluster int the cluster list
      */
     public static Cluster nearestCluster(
@@ -279,11 +268,11 @@ public final class ClusterStats {
         }
 
         final double[] center = cluster.getCenter();
-        
+
         Cluster nearestCluster = null;
         double minDistance = 0.0;
-        
-        for (Cluster c: clusters) {
+
+        for (Cluster c : clusters) {
             if (c != cluster) {
                 double d = distanceMetric.distance(c.getCenter(), center);
                 if (nearestCluster == null || d < minDistance) {
@@ -296,270 +285,282 @@ public final class ClusterStats {
         return nearestCluster;
     }
 
+    // The executor to use in asynchronous computations when no executor is
+    // provided as an argument.
+    private static final Executor DEFAULT_EXECUTOR
+            = (ForkJoinPool.getCommonPoolParallelism() > 1) ? ForkJoinPool.commonPool()
+            : new Executor() {
+        @Override
+        public void execute(Runnable command) {
+            new Thread(command).start();
+        }
+    };
+
     private static CompletableFuture<double[]> computeAsAsync(
             final TupleList tuples,
             final Cluster cluster,
-            final DistanceMetric distanceMetric) {
-        
+            final DistanceMetric distanceMetric,
+            final Executor executor) {
         return CompletableFuture.supplyAsync(() -> {
             return computeAs(tuples, cluster, distanceMetric);
-        });
+        }, executor);
     }
-    
+
     private static CompletableFuture<double[]> computeBsAsync(
             final TupleList tuples,
             final List<Cluster> clusters,
             final int clusterId,
-            final DistanceMetric distanceMetric
+            final DistanceMetric distanceMetric,
+            final Executor executor
     ) {
         return CompletableFuture.supplyAsync(() -> {
-           return computeBs(tuples, clusters, clusterId, distanceMetric); 
-        });
+            return computeBs(tuples, clusters, clusterId, distanceMetric);
+        }, executor);
     }
-    
+
     private static CompletableFuture<Double> computeSilhouetteCoefficientAsync(
             final double[] clusterMemberAs,
-            final double[] clusterMemberBs
+            final double[] clusterMemberBs,
+            final Executor executor
     ) {
         return CompletableFuture.supplyAsync(() -> {
+            return computeSilhouetteCoefficient(clusterMemberAs, clusterMemberBs);
+        }, executor);
+    }
+    
+    private static double computeSilhouetteCoefficient(
+        final double[] clusterMemberAs,
+            final double[] clusterMemberBs) {
             final int numMembers = clusterMemberAs.length;
             double sum = 0.0;
-            for (int i=0; i<numMembers; i++) {
+            for (int i = 0; i < numMembers; i++) {
                 double memberA = clusterMemberAs[i];
                 double memberB = clusterMemberBs[i];
                 double max = Math.max(memberA, memberB);
-                double memberS = max != 0.0 ? (memberB - memberA)/max : 0.0;
+                double memberS = max != 0.0 ? (memberB - memberA) / max : 0.0;
                 sum += memberS;
             }
-            return sum/numMembers;
-        });
+            return sum / numMembers;
     }
-    
+
     public static List<Double> computeSilhouetteCoefficients(
             TupleList tuples,
             List<Cluster> clusters,
-            DistanceMetric distanceMetric) throws ClusteringException {
-
+            DistanceMetric distanceMetric,
+            Executor executor) throws ClusteringException {
+        
         Objects.requireNonNull(tuples);
         Objects.requireNonNull(clusters);
         Objects.requireNonNull(distanceMetric);
-        
+
         final int numClusters = clusters.size();
-        
+
         try {
-        
+
             // Will contain ones for computes both As and Bs for the
             // members of each cluster. They'll be in the order: a, b, a, b, ...
-            List<CompletableFuture<double[]>> abFutures = new ArrayList<>(2*numClusters);
-            
-            for (int i=0; i<numClusters; i++) {
+            List<CompletableFuture<double[]>> abFutures = new ArrayList<>(2 * numClusters);
+
+            for (int i = 0; i < numClusters; i++) {
                 // Use clones of the distance metrics, since they're not
                 // threadsafe.
-                abFutures.add(computeAsAsync(tuples, clusters.get(i), distanceMetric.clone()));
-                abFutures.add(computeBsAsync(tuples, clusters, i, distanceMetric.clone()));
+                abFutures.add(computeAsAsync(tuples, clusters.get(i),
+                        distanceMetric.clone(), executor)
+                );
+                abFutures.add(computeBsAsync(tuples, clusters, i, 
+                        distanceMetric.clone(), executor));
             }
-            
+
             CompletableFuture<Void> abFuturesAll = CompletableFuture.allOf(
-                abFutures.toArray(new CompletableFuture[abFutures.size()]));
-        
+                    abFutures.toArray(new CompletableFuture[abFutures.size()]));
+
             CompletableFuture<List<double[]>> abFuturesResult = abFuturesAll.thenApply(
-                v -> {
-                    return abFutures.stream()
-                            .map(f -> f.join())
-                            .collect(Collectors.toList());
-                }
+                    v -> {
+                        return abFutures.stream()
+                                .map(f -> f.join())
+                                .collect(Collectors.toList());
+                    }
             );
-        
-            final List<double[]> clusterABs = abFuturesResult.get();        
-                  
+
+            final List<double[]> clusterABs = abFuturesResult.get();
+
             List<CompletableFuture<Double>> sFutures = new ArrayList<>(numClusters);
-            for (int i=0; i<clusterABs.size(); i+=2) {
+            for (int i = 0; i < clusterABs.size(); i += 2) {
                 sFutures.add(computeSilhouetteCoefficientAsync(
-                        clusterABs.get(i), clusterABs.get(i+1)));
+                        clusterABs.get(i), clusterABs.get(i + 1), executor));
             }
-            
+
             CompletableFuture<Void> sFuturesAll = CompletableFuture.allOf(
                     sFutures.toArray(new CompletableFuture[sFutures.size()]));
-            
+
             CompletableFuture<List<Double>> sFuturesResult = sFuturesAll.thenApply(
                     v -> {
                         return sFutures.stream().map(f -> f.join()).collect(Collectors.toList());
                     }
             );
-            
+
             return sFuturesResult.get();
-            
+
         } catch (ExecutionException | InterruptedException e) {
             throw new ClusteringException("error computing silhouette coefficients", e);
         }
-
-//        
-//            
-//            List<Callable<double[]>> bCallables = new ArrayList<>(numClusters);
-//            
-//            for (int i=0; i<numClusters; i++) {
-//                final int clusterId = i;
-//                bCallables.add(() -> {
-//                    return computeBs(tuples, clusters, clusterId, distanceMetric.clone());
-//                });
-//            }
-//            
-//            List<Future<double[]>> bFutures = executorService.invokeAll(bCallables);
-//            
-//            for (int i=0; i<numClusters; i++) {
-//                Cluster c = clusters.get(i);
-//                final double[] clusterBs = bFutures.get(i).get();
-//                final int numMembers = c.getMemberCount();
-//                for (int j=0; j<numMembers; j++) {
-//                    Bs[c.getMember(j)] = clusterBs[j];
-//                }
-//            }
-//            
-//        } catch (Exception e) {
-//            
-//        } finally {
-//            if (executorService != null) {
-//                executorService.shutdownNow();
-//            }
-//        }
-//        
-//        List<Double> clusterSilhouettes = new ArrayList<>(numClusters);
-//        for (Cluster c: clusters) {
-//            final int memberCount = c.getMemberCount();
-//            double sum = 0.0;
-//            for (int i=0; i<memberCount; i++) {
-//                final int tupleId = c.getMember(i);
-//                final double maxAB = Math.max(As[tupleId], Bs[tupleId]);
-//                double tupleSilhouette = Bs[tupleId] - As[tupleId];
-//                if (maxAB != 0.0) {
-//                    tupleSilhouette /= maxAB;
-//                }
-//                sum += tupleSilhouette;
-//            }
-//            clusterSilhouettes.add(sum/memberCount);
-//        }
-//        
-//        return Optional.ofNullable(clusterSilhouettes);
-
-//        return Optional.empty();
     }
-    
-    public static OptionalDouble computeSilhouetteCoefficient(
+
+    public static List<Double> computeSilhouetteCoefficients(
             TupleList tuples,
             List<Cluster> clusters,
-            Cluster cluster,
-            DistanceMetric distanceMetric,
-            DistanceCacheFactory distanceCacheFactory) throws IOException {
-        
-        Objects.requireNonNull(tuples);
-        Objects.requireNonNull(clusters);
-        Objects.requireNonNull(cluster);
-        Objects.requireNonNull(distanceMetric);
-        Objects.requireNonNull(distanceCacheFactory);
-        
-        final int numMembers = cluster.getMemberCount();
-        
-        if (numMembers == 0) {
-            throw new IllegalArgumentException("cluster is empty");
-        }
-        
-        if (clusters.size() == 1 || numMembers == 1) {
-            return OptionalDouble.of(0.0);
-        }
-        
-        double[] a = new double[numMembers];
-        double[] b = new double[numMembers];
-        ReadOnlyDistanceCache intraDistCache = null;
-        
-        try {
-            
-            Optional<ReadOnlyDistanceCache> opt = computePairwiseDistances(
-                    tuples, cluster, distanceMetric, distanceCacheFactory);
-            if (!opt.isPresent()) {
-                return OptionalDouble.empty();
-            }
-            
-            intraDistCache = opt.get();
-            
-            for (int i=0; i<numMembers; i++) {
-                double sum = 0.0;
-                for (int j=0; j<numMembers; j++) {
-                    if (i != j) {
-                        sum += intraDistCache.getDistance(i, j);
-                    }
-                }
-                a[i] = sum/(numMembers - 1);
-            }
-            
-        } finally {
-            if (intraDistCache instanceof FileDistanceCache) {
-                FileDistanceCache fdc = (FileDistanceCache) intraDistCache;
-                fdc.closeFile();
-                fdc.getFile().delete();
-            }
-        }
-        
-        final Cluster nearestCluster = nearestCluster(clusters, cluster, distanceMetric);
-        final int numMembers2 = nearestCluster.getMemberCount();
-        final double[] tupleBuffer1 = new double[tuples.getTupleLength()];
-        final double[] tupleBuffer2 = new double[tuples.getTupleLength()];
-        
-        for (int i=0; i<numMembers; i++) {
-            double sum = 0.0;
-            tuples.getTuple(cluster.getMember(i), tupleBuffer1);
-            for (int j=0; j<numMembers2; j++) {
-                tuples.getTuple(nearestCluster.getMember(j), tupleBuffer2);
-                sum += distanceMetric.distance(tupleBuffer1, tupleBuffer2);
-            }
-            b[i] = sum/numMembers2;
-        }
-        
-        double sum = 0.0;
-        for (int i=0; i<numMembers; i++) {
-            sum += (b[i] - a[i])/Math.max(a[i], b[i]);
-        }
-        
-        return OptionalDouble.of(sum/numMembers);
+            DistanceMetric distanceMetric) throws ClusteringException {
+        return computeSilhouetteCoefficients(tuples, clusters, distanceMetric,
+                DEFAULT_EXECUTOR);
     }
     
+    public static List<Double> computeSilhouetteCoefficientsSequentially(
+            TupleList tuples,
+            List<Cluster> clusters,
+            DistanceMetric distanceMetric) {
+
+        Objects.requireNonNull(tuples);
+        Objects.requireNonNull(clusters);
+        Objects.requireNonNull(distanceMetric);
+
+        final int numClusters = clusters.size();
+
+        final List<Double> silhouetteCoefficients = new ArrayList<>(numClusters);
+        
+        int cId = 0;
+        for (Cluster c: clusters) {
+            final double[] As = computeAs(tuples, c, distanceMetric);
+            final double[] Bs = computeBs(tuples, clusters, cId++, distanceMetric);
+            final int numMembers = c.getMemberCount();
+            double sSum = 0.0;
+            for (int i=0; i<numMembers; i++) {
+                double denom = Math.max(As[i], Bs[i]);
+                if (denom != 0.0) {
+                    sSum += (Bs[i] - As[i])/denom;
+                }
+            }
+            silhouetteCoefficients.add(sSum/numMembers);
+        }
+        
+        return silhouetteCoefficients;
+    }
+    
+//    public static OptionalDouble computeSilhouetteCoefficient(
+//            TupleList tuples,
+//            List<Cluster> clusters,
+//            Cluster cluster,
+//            DistanceMetric distanceMetric,
+//            DistanceCacheFactory distanceCacheFactory) throws IOException {
+//
+//        Objects.requireNonNull(tuples);
+//        Objects.requireNonNull(clusters);
+//        Objects.requireNonNull(cluster);
+//        Objects.requireNonNull(distanceMetric);
+//        Objects.requireNonNull(distanceCacheFactory);
+//
+//        final int numMembers = cluster.getMemberCount();
+//
+//        if (numMembers == 0) {
+//            throw new IllegalArgumentException("cluster is empty");
+//        }
+//
+//        if (clusters.size() == 1 || numMembers == 1) {
+//            return OptionalDouble.of(0.0);
+//        }
+//
+//        double[] a = new double[numMembers];
+//        double[] b = new double[numMembers];
+//        ReadOnlyDistanceCache intraDistCache = null;
+//
+//        try {
+//
+//            Optional<ReadOnlyDistanceCache> opt = computePairwiseDistances(
+//                    tuples, cluster, distanceMetric, distanceCacheFactory);
+//            if (!opt.isPresent()) {
+//                return OptionalDouble.empty();
+//            }
+//
+//            intraDistCache = opt.get();
+//
+//            for (int i = 0; i < numMembers; i++) {
+//                double sum = 0.0;
+//                for (int j = 0; j < numMembers; j++) {
+//                    if (i != j) {
+//                        sum += intraDistCache.getDistance(i, j);
+//                    }
+//                }
+//                a[i] = sum / (numMembers - 1);
+//            }
+//
+//        } finally {
+//            if (intraDistCache instanceof FileDistanceCache) {
+//                FileDistanceCache fdc = (FileDistanceCache) intraDistCache;
+//                fdc.closeFile();
+//                fdc.getFile().delete();
+//            }
+//        }
+//
+//        final Cluster nearestCluster = nearestCluster(clusters, cluster, distanceMetric);
+//        final int numMembers2 = nearestCluster.getMemberCount();
+//        final double[] tupleBuffer1 = new double[tuples.getTupleLength()];
+//        final double[] tupleBuffer2 = new double[tuples.getTupleLength()];
+//
+//        for (int i = 0; i < numMembers; i++) {
+//            double sum = 0.0;
+//            tuples.getTuple(cluster.getMember(i), tupleBuffer1);
+//            for (int j = 0; j < numMembers2; j++) {
+//                tuples.getTuple(nearestCluster.getMember(j), tupleBuffer2);
+//                sum += distanceMetric.distance(tupleBuffer1, tupleBuffer2);
+//            }
+//            b[i] = sum / numMembers2;
+//        }
+//
+//        double sum = 0.0;
+//        for (int i = 0; i < numMembers; i++) {
+//            sum += (b[i] - a[i]) / Math.max(a[i], b[i]);
+//        }
+//
+//        return OptionalDouble.of(sum / numMembers);
+//    }
+
     private static double[] computeAs(
             TupleList tuples,
             Cluster cluster,
             DistanceMetric distanceMetric) {
-        
+
         final int numMembers = cluster.getMemberCount();
         final double[] result = new double[numMembers];
-        
+
         if (numMembers > 1) {
             final double[] tupleBuffer1 = new double[tuples.getTupleLength()];
             final double[] tupleBuffer2 = new double[tuples.getTupleLength()];
-            for (int i=0; i<numMembers-1; i++) {
+            for (int i = 0; i < numMembers - 1; i++) {
                 tuples.getTuple(cluster.getMember(i), tupleBuffer1);
-                for (int j=i+1; j<numMembers; j++) {
+                for (int j = i + 1; j < numMembers; j++) {
                     tuples.getTuple(cluster.getMember(j), tupleBuffer2);
                     double d = distanceMetric.distance(tupleBuffer1, tupleBuffer2);
                     result[i] += d;
                     result[j] += d;
                 }
             }
-            for (int i=0; i<numMembers; i++) {
+            for (int i = 0; i < numMembers; i++) {
                 result[i] /= (numMembers - 1);
             }
         }
-        
+
         return result;
     }
 
     private static double[] computeAs(
             Cluster cluster,
             ReadOnlyDistanceCache distanceCache) throws IOException {
-        
+
         final int numMembers = cluster.getMemberCount();
         final double[] result = new double[numMembers];
-        
+
         if (numMembers > 1) {
-            for (int i=0; i<numMembers-1; i++) {
-                for (int j=i+1; j<numMembers; j++) {
+            for (int i = 0; i < numMembers - 1; i++) {
+                for (int j = i + 1; j < numMembers; j++) {
                     // Use the indices for the cluster, not the indices into
                     // tuples.
                     double d = distanceCache.getDistance(i, j);
@@ -567,177 +568,177 @@ public final class ClusterStats {
                     result[j] += d;
                 }
             }
-            for (int i=0; i<numMembers; i++) {
+            for (int i = 0; i < numMembers; i++) {
                 result[i] /= (numMembers - 1);
             }
         }
-        
+
         return result;
     }
-    
+
     private static double[] computeBs(
             TupleList tuples,
             List<Cluster> clusters,
             int clusterId,
             DistanceMetric distanceMetric) {
-            
-            final int[] members = clusters.get(clusterId).getMembers().toArray();
-            final double[] Bs = new double[members.length];
-            
-            final double[] tupleBuffer1 = new double[tuples.getTupleLength()];
-            final double[] tupleBuffer2 = new double[tuples.getTupleLength()];
-            
-            for (int i=0; i<members.length; i++) {
-                int tupleId = members[i];
-                int nearestClusterId = findSecondNearestCluster(
-                        tuples, clusters, tupleId, clusterId, distanceMetric
-                );
-                final Cluster nearestCluster = clusters.get(nearestClusterId);
-                final int nearestClusterMemberCount = nearestCluster.getMemberCount();
-                tuples.getTuple(tupleId, tupleBuffer1);
-                for (int j=0; j<nearestClusterMemberCount; j++) {
-                    tuples.getTuple(nearestCluster.getMember(j), tupleBuffer2);
-                    Bs[i] += distanceMetric.distance(tupleBuffer1, tupleBuffer2);
-                }
-                Bs[i] /= nearestClusterMemberCount;
+
+        final int[] members = clusters.get(clusterId).getMembers().toArray();
+        final double[] Bs = new double[members.length];
+
+        final double[] tupleBuffer1 = new double[tuples.getTupleLength()];
+        final double[] tupleBuffer2 = new double[tuples.getTupleLength()];
+
+        for (int i = 0; i < members.length; i++) {
+            int tupleId = members[i];
+            int nearestClusterId = findSecondNearestCluster(
+                    tuples, clusters, tupleId, clusterId, distanceMetric
+            );
+            final Cluster nearestCluster = clusters.get(nearestClusterId);
+            final int nearestClusterMemberCount = nearestCluster.getMemberCount();
+            tuples.getTuple(tupleId, tupleBuffer1);
+            for (int j = 0; j < nearestClusterMemberCount; j++) {
+                tuples.getTuple(nearestCluster.getMember(j), tupleBuffer2);
+                Bs[i] += distanceMetric.distance(tupleBuffer1, tupleBuffer2);
             }
-            
-            return Bs;
-    }
-    
-    private static double[] computeBs(
-            TupleList tuples,
-            List<Cluster> clusters,
-            int[] tupleIds,
-            int[] nearestClusterIds,
-            DistanceMetric distanceMetric
-    ) {
-        final double[] Bs = new double[tupleIds.length];
-        for (int i=0; i<Bs.length; i++) {
-            Bs[i] = computeB(tuples, clusters, tupleIds[i], 
-                    nearestClusterIds[i], distanceMetric);
+            Bs[i] /= nearestClusterMemberCount;
         }
+
         return Bs;
     }
-            
-    private static double computeB(
-            TupleList tuples, 
-            List<Cluster> clusters, 
-            int tupleId,
-            int nearestClusterId,
-            DistanceMetric distanceMetric) {
-        
-        final Cluster nearestCluster = clusters.get(nearestClusterId);
-        
-        final int numMembers = nearestCluster.getMemberCount();
-        final double[] tuple = tuples.getTuple(tupleId, null);
-        final double[] tupleBuffer = new double[tuple.length];
-        
-        double sum = 0.0;
-        for (int i=0; i<numMembers; i++) {
-            tuples.getTuple(nearestCluster.getMember(i), tupleBuffer);
-            sum += distanceMetric.distance(tuple, tupleBuffer);
-        }
-        
-        return sum/numMembers;
-    }
 
-    /**
-     * Computes the distances between every 2 members in a cluster. If the
-     * cluster has n members, the total number of pairwise distances is
-     * n(n-1)/2, since the distance(i,j) == distance(j,i). The distance
-     * from a tuple member with itself is always 0, so this is not computed.
-     * 
-     * @param tuples contains the tuple data referenced by the cluster membership
-     * @param cluster the cluster, which contains the member indexes into
-     *   tuples
-     * @param distanceMetric the distance metric to use
-     * @param distanceCacheFactory the factory for creating the distance cache
-     * @return a {@code ReadOnlyDistanceCache} containing the pairwise distances
-     *   wrapped in an optional.
-     */
-    public static Optional<ReadOnlyDistanceCache> computePairwiseDistances(
-            TupleList tuples,
-            Cluster cluster,
-            DistanceMetric distanceMetric,
-            DistanceCacheFactory distanceCacheFactory) throws IOException {
-            
-        Objects.requireNonNull(tuples);
-        Objects.requireNonNull(cluster);
-        Objects.requireNonNull(distanceMetric);
-        Objects.requireNonNull(distanceCacheFactory);
-        
-        final int numMembers = cluster.getMemberCount();
+//    private static double[] computeBs(
+//            TupleList tuples,
+//            List<Cluster> clusters,
+//            int[] tupleIds,
+//            int[] nearestClusterIds,
+//            DistanceMetric distanceMetric
+//    ) {
+//        final double[] Bs = new double[tupleIds.length];
+//        for (int i = 0; i < Bs.length; i++) {
+//            Bs[i] = computeB(tuples, clusters, tupleIds[i],
+//                    nearestClusterIds[i], distanceMetric);
+//        }
+//        return Bs;
+//    }
+//
+//    private static double computeB(
+//            TupleList tuples,
+//            List<Cluster> clusters,
+//            int tupleId,
+//            int nearestClusterId,
+//            DistanceMetric distanceMetric) {
+//
+//        final Cluster nearestCluster = clusters.get(nearestClusterId);
+//
+//        final int numMembers = nearestCluster.getMemberCount();
+//        final double[] tuple = tuples.getTuple(tupleId, null);
+//        final double[] tupleBuffer = new double[tuple.length];
+//
+//        double sum = 0.0;
+//        for (int i = 0; i < numMembers; i++) {
+//            tuples.getTuple(nearestCluster.getMember(i), tupleBuffer);
+//            sum += distanceMetric.distance(tuple, tupleBuffer);
+//        }
+//
+//        return sum / numMembers;
+//    }
 
-        double[] tupleBuffer1 = new double[tuples.getTupleLength()];
-        double[] tupleBuffer2 = new double[tuples.getTupleLength()];
+//    /**
+//     * Computes the distances between every 2 members in a cluster. If the
+//     * cluster has n members, the total number of pairwise distances is
+//     * n(n-1)/2, since the distance(i,j) == distance(j,i). The distance from a
+//     * tuple member with itself is always 0, so this is not computed.
+//     *
+//     * @param tuples contains the tuple data referenced by the cluster
+//     * membership
+//     * @param cluster the cluster, which contains the member indexes into tuples
+//     * @param distanceMetric the distance metric to use
+//     * @param distanceCacheFactory the factory for creating the distance cache
+//     * @return a {@code ReadOnlyDistanceCache} containing the pairwise distances
+//     * wrapped in an optional.
+//     */
+//    public static Optional<ReadOnlyDistanceCache> computePairwiseDistances(
+//            TupleList tuples,
+//            Cluster cluster,
+//            DistanceMetric distanceMetric,
+//            DistanceCacheFactory distanceCacheFactory) throws IOException {
+//
+//        Objects.requireNonNull(tuples);
+//        Objects.requireNonNull(cluster);
+//        Objects.requireNonNull(distanceMetric);
+//        Objects.requireNonNull(distanceCacheFactory);
+//
+//        final int numMembers = cluster.getMemberCount();
+//
+//        double[] tupleBuffer1 = new double[tuples.getTupleLength()];
+//        double[] tupleBuffer2 = new double[tuples.getTupleLength()];
+//
+//        DistanceCache distanceCache = distanceCacheFactory.newDistanceCache(
+//                numMembers).orElse(null);
+//
+//        if (distanceCache != null) {
+//            for (int i = 0; i < numMembers - 1; i++) {
+//                tuples.getTuple(cluster.getMember(i), tupleBuffer1);
+//                for (int j = i + 1; j < numMembers; j++) {
+//                    tuples.getTuple(cluster.getMember(j), tupleBuffer2);
+//                    distanceCache.setDistance(i, j,
+//                            distanceMetric.distance(tupleBuffer1, tupleBuffer2));
+//                }
+//            }
+//        }
+//
+//        return Optional.ofNullable(distanceCache);
+//    }
 
-        DistanceCache distanceCache = distanceCacheFactory.newDistanceCache(
-                numMembers).orElse(null);
+//    public static int[] findSecondNearestClusters(
+//            TupleList tuples,
+//            List<Cluster> clusters,
+//            int[] tupleIds,
+//            int[] memberShipClusterIds,
+//            DistanceMetric distanceMetric) {
+//
+//        Objects.requireNonNull(tuples);
+//        Objects.requireNonNull(clusters);
+//        Objects.requireNonNull(distanceMetric);
+//        Objects.requireNonNull(tupleIds);
+//        Objects.requireNonNull(memberShipClusterIds);
+//
+//        if (tupleIds.length != memberShipClusterIds.length) {
+//            throw new IllegalArgumentException(
+//                    String.format(
+//                            "tupleIds.length must equal memberShipClusterIds.length: %d != %d",
+//                            tupleIds.length, memberShipClusterIds.length));
+//        }
+//
+//        final int[] nearestClusterIds = new int[tupleIds.length];
+//
+//        for (int i = 0; i < tupleIds.length; i++) {
+//            nearestClusterIds[i] = findSecondNearestCluster(
+//                    tuples, clusters, tupleIds[i], memberShipClusterIds[i],
+//                    distanceMetric);
+//        }
+//
+//        return nearestClusterIds;
+//    }
 
-        if (distanceCache != null) {
-            for (int i = 0; i < numMembers - 1; i++) {
-                tuples.getTuple(cluster.getMember(i), tupleBuffer1);
-                for (int j = i + 1; j < numMembers; j++) {
-                    tuples.getTuple(cluster.getMember(j), tupleBuffer2);
-                    distanceCache.setDistance(i, j,
-                            distanceMetric.distance(tupleBuffer1, tupleBuffer2));
-                }
-            }
-        }
-
-        return Optional.ofNullable(distanceCache);
-    }
-    
-    public static int[] findSecondNearestClusters(
-        TupleList tuples,
-        List<Cluster> clusters,
-        int[] tupleIds,
-        int[] memberShipClusterIds,
-        DistanceMetric distanceMetric) {
-
-        Objects.requireNonNull(tuples);
-        Objects.requireNonNull(clusters);
-        Objects.requireNonNull(distanceMetric);
-        Objects.requireNonNull(tupleIds);
-        Objects.requireNonNull(memberShipClusterIds);
-        
-        if (tupleIds.length != memberShipClusterIds.length) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "tupleIds.length must equal memberShipClusterIds.length: %d != %d",
-                            tupleIds.length, memberShipClusterIds.length));
-        }
-        
-        final int[] nearestClusterIds = new int[tupleIds.length];
-        
-        for (int i=0; i<tupleIds.length; i++) {
-            nearestClusterIds[i] = findSecondNearestCluster(
-                tuples, clusters, tupleIds[i], memberShipClusterIds[i],
-                    distanceMetric);
-        }
-        
-        return nearestClusterIds;
-    }
-    
     public static int findSecondNearestCluster(
-            TupleList tuples, 
-            List<Cluster> clusters, 
+            TupleList tuples,
+            List<Cluster> clusters,
             int tupleId,
             int memberShipClusterId,
             DistanceMetric distanceMetric) {
-        
+
         Objects.requireNonNull(tuples);
         Objects.requireNonNull(clusters);
         Objects.requireNonNull(distanceMetric);
-        
+
         final double[] tuple = tuples.getTuple(tupleId, null);
         final int numClusters = clusters.size();
-        
+
         int nearestCluster = -1;
         double minDistance = 0.0;
-        
-        for (int i=0; i<numClusters; i++) {
+
+        for (int i = 0; i < numClusters; i++) {
             if (i != memberShipClusterId) {
                 double d = distanceMetric.distance(tuple, clusters.get(i).getCenter());
                 if (nearestCluster == -1 || d < minDistance) {
@@ -746,7 +747,7 @@ public final class ClusterStats {
                 }
             }
         }
-        
+
         return nearestCluster;
     }
 }
