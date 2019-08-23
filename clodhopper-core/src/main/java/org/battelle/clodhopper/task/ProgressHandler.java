@@ -155,6 +155,15 @@ public class ProgressHandler {
             task.postMessage(msg);
         }
     }
+    
+    /**
+     * Posts a message to {@code TaskListener}s registered with the associated {@param Task}.
+     * @param format a format string
+     * @param args the parameters for the format string
+     */
+    public void postMessage(String format, Object... args) {
+        postMessage(String.format(format, args));
+    }
 
     /**
      * Post a progress value with the option of forcing the post.

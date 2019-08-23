@@ -15,6 +15,8 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.battelle.clodhopper.AbstractClusterer;
 import org.battelle.clodhopper.Cluster;
@@ -28,6 +30,8 @@ import org.battelle.clodhopper.tuple.TupleList;
 import org.battelle.clodhopper.tuple.TupleMath;
 import org.battelle.clodhopper.util.ArrayIntIterator;
 import org.battelle.clodhopper.util.Sorting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*=====================================================================
  * 
@@ -59,6 +63,8 @@ import org.battelle.clodhopper.util.Sorting;
  *===================================================================*/
 public class KMeansClusterer extends AbstractClusterer {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(KMeansClusterer.class);
+    
     private static final int MOVES_TRACKING_WINDOW_LEN = 6;
 
     private TupleList tuples;
@@ -76,7 +82,7 @@ public class KMeansClusterer extends AbstractClusterer {
 
     // Set to true if clustering does not appear to be converging to detect the case of
     // clustering oscillating between states.
-    private boolean oscillationDetectionOn;
+    private AtomicBoolean oscillationDetectionOn = new AtomicBoolean();
 
     public KMeansClusterer(TupleList tuples, KMeansParams params) {
         if (tuples == null || params == null) {
@@ -94,6 +100,7 @@ public class KMeansClusterer extends AbstractClusterer {
     @Override
     public List<Cluster> doTask() throws Exception {
 
+        // The product which will be returned at the end.
         List<Cluster> clusters = null;
 
         try {
@@ -106,8 +113,9 @@ public class KMeansClusterer extends AbstractClusterer {
             if (tupleCount == 0) {
                 finishWithError("zero tuples");
             }
+            
             if (requestedClusterCount <= 0) {
-                finishWithError("requested cluster count must be greater than 0: " + requestedClusterCount);
+                finishWithError("requested cluster count must be greater than 0: %d", requestedClusterCount);
             }
 
             final int maxIterations = params.getMaxIterations();
@@ -118,7 +126,7 @@ public class KMeansClusterer extends AbstractClusterer {
 
             ph.postBegin();
 
-            // Pick some initial centers based upon the seeding method.
+            // Pick some initial centers based upon the seeding method. 
             initializeCenters(ph);
 
             // The actual cluster count may be less than the requested cluster count. For example,
@@ -126,7 +134,7 @@ public class KMeansClusterer extends AbstractClusterer {
             // be reduced.
             final int actualClusterCount = protoClusters.length;
 
-            ph.postMessage(String.format("%d initial cluster centers selected", actualClusterCount));
+            ph.postMessage("%d initial cluster centers selected", actualClusterCount);
 
             // The trivial case.  No work to do, since everything is to be in 1 cluster.
             //
@@ -176,8 +184,9 @@ public class KMeansClusterer extends AbstractClusterer {
                 int moveDiffListIndex = 0;
 
                 // If oscillation detection is turned on, keeps track of moves during iterations.
-                List<List<Move>> pastMoveLists = null;
-                boolean oscillationDetected = false;
+                oscillationDetectionOn.set(false);
+                List<List<Move>> pastMoveLists = new ArrayList<>();
+                boolean oscillationDetected;
 
                 do {
 
@@ -195,14 +204,16 @@ public class KMeansClusterer extends AbstractClusterer {
                     ph.postStep();
 
                     iteration++;
-                    ph.postMessage(String.format("iteration %d: %d moves", iteration, moves));
+                    ph.postMessage("iteration %d: %d moves", iteration, moves);
 
-                    if (oscillationDetectionOn) {
+                    if (oscillationDetectionOn.get()) {
 
+                        int pastMoveListSz = pastMoveLists != null ? pastMoveLists.size() : 0;
                         // Don't let it grow larger than MOVES_TRACKING_WINDOW_LEN.
-                        if (pastMoveLists.size() == MOVES_TRACKING_WINDOW_LEN) {
+                        if (pastMoveListSz == MOVES_TRACKING_WINDOW_LEN) {
                             pastMoveLists.remove(0);
                         }
+                        
                         pastMoveLists.add(subtaskManager.getMovesList());
 
                         // Analyzes the moves from iteration to iteration to check if the clusters are simply 
@@ -231,8 +242,8 @@ public class KMeansClusterer extends AbstractClusterer {
                             }
                             avg /= MOVES_TRACKING_WINDOW_LEN;
                             if (avg <= 2) {
-                                oscillationDetectionOn = true;
-                                pastMoveLists = new ArrayList<>();
+                                oscillationDetectionOn.set(true);
+                                pastMoveLists.clear();
                             }
                         }
 
@@ -244,14 +255,14 @@ public class KMeansClusterer extends AbstractClusterer {
 
                         if (emptyClustersReplaced) {
 
-                            oscillationDetectionOn = false;
+                            oscillationDetectionOn.set(false);
                             moveDiffList.clear();
                             moveDiffListIndex = 0;
                             pastMoveLists = null;
 
                             computeCenters();
                             int additionalMoves = makeAssignments();
-                            ph.postMessage(String.format("after replacement of empty clusters, %d additional moves", additionalMoves));
+                            ph.postMessage("after replacement of empty clusters, %d additional moves", additionalMoves);
                         }
                     }
 
@@ -297,7 +308,7 @@ public class KMeansClusterer extends AbstractClusterer {
     }
 
     /**
-     * Called at the beginning of clustering to choose the initial cluster
+     * Called once at the commencement of clustering to choose the initial cluster
      * centers using the cluster seeder. The method may reduce the number of
      * initial clusters below the requested cluster count if too few unique
      * tuples are present.
@@ -314,8 +325,8 @@ public class KMeansClusterer extends AbstractClusterer {
 
         // There is no point in requesting more clusters than there are unique tuples.
         if (clusterCount > uniqueTupleCount) {
-            ph.postMessage(String.format("reducing requested number of clusters from %d to %d, the number of unique tuples",
-                    clusterCount, uniqueTupleCount));
+            ph.postMessage("reducing requested number of clusters from %d to %d, the number of unique tuples",
+                    clusterCount, uniqueTupleCount);
             clusterCount = uniqueTupleCount;
         }
 
@@ -331,7 +342,6 @@ public class KMeansClusterer extends AbstractClusterer {
             seeds.getTuple(i, center);
             protoClusters[i] = new ProtoCluster(center);
         }
-
     }
 
     /**
@@ -504,8 +514,8 @@ public class KMeansClusterer extends AbstractClusterer {
             try {
                 clusters = splitter.get();
                 // Since the result has been verified to be success, neither exception should happen.
-            } catch (InterruptedException e) {
-            } catch (ExecutionException e) {
+            } catch (InterruptedException | ExecutionException e) {
+                LOGGER.error("error getting result from splitter", e);
             }
             int sz = clusters != null ? clusters.size() : 0;
             result = new ProtoCluster[sz];
@@ -727,7 +737,7 @@ public class KMeansClusterer extends AbstractClusterer {
 
             // Now create a thread pool if either of the worker counts is > 1.
             if (assignmentWorkerCount > 1 || centerCompWorkerCount > 1) {
-                threadPool = Executors.newFixedThreadPool(Math.max(assignmentWorkerCount, centerCompWorkerCount));
+                threadPool = ForkJoinPool.commonPool(); 
             }
         }
 
@@ -735,9 +745,8 @@ public class KMeansClusterer extends AbstractClusterer {
          * Shuts down the thread pool if using one.
          */
         private void shutdown() {
-            if (threadPool != null) {
-                threadPool.shutdownNow();
-            }
+            // Used to call shutdownNow() on a thread pool, but now simply use 
+            // ForkJoinPool.commonPool(), which we don't want to shutdown.
         }
 
         private boolean makeAssignments() {
@@ -787,7 +796,7 @@ public class KMeansClusterer extends AbstractClusterer {
 
         private List<Move> getMovesList() {
             List<Move> movesList = null;
-            if (oscillationDetectionOn) {
+            if (oscillationDetectionOn.get()) {
                 movesList = new ArrayList<>();
                 for (AssignmentWorker aw : assignmentWorkers) {
                     movesList.addAll(aw.getMovesList());
@@ -857,7 +866,7 @@ public class KMeansClusterer extends AbstractClusterer {
             public Void call() throws Exception {
                 try {
                     moves = 0;
-                    if (oscillationDetectionOn) {
+                    if (oscillationDetectionOn.get()) {
                         movesList = new ArrayList<>();
                     }
                     for (int i = startTuple; i < endTuple; i++) {
@@ -865,7 +874,7 @@ public class KMeansClusterer extends AbstractClusterer {
                         if (c >= 0) {
                             protoClusters[c].add(i);
                             if (clusterAssignments[i] != c) {
-                                if (oscillationDetectionOn) {
+                                if (oscillationDetectionOn.get()) {
                                     movesList.add(new Move(i, clusterAssignments[i], c));
                                 }
                                 clusterAssignments[i] = c;
@@ -1010,8 +1019,8 @@ public class KMeansClusterer extends AbstractClusterer {
 
     private static class ProtoClusterState {
 
-        private int[] members;
-        private int[] sizes;
+        private final int[] members;
+        private final int[] sizes;
 
         private ProtoClusterState(final ProtoCluster[] protoClusters) {
 
