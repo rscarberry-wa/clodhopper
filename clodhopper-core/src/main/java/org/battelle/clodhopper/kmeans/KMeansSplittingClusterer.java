@@ -104,14 +104,14 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
             allIDs[i] = i;
         }
 
-        unsplittables = new HashSet<Cluster>();
+        unsplittables = new HashSet<>();
 
         int numWorkerThreads = params.getWorkerThreadCount();
         if (numWorkerThreads <= 0) {
             numWorkerThreads = Runtime.getRuntime().availableProcessors();
         }
 
-        List<Cluster> clusters = null;
+        List<Cluster> clusters;
         ExecutorService threadPool = null;
 
         try {
@@ -130,7 +130,7 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
                 this.maxClusters = Integer.MAX_VALUE;
             }
             
-            List<Cluster> workingList = null;
+            List<Cluster> workingList;
             
             if (initialClusterSeeds != null || minClusters > 1) {
             	
@@ -162,7 +162,7 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
 
             } else { // mInitialClusterSeeds == null && minClusters == 1
                 
-            	workingList = new ArrayList<Cluster> ();
+            	workingList = new ArrayList<> ();
             	double[] center = TupleMath.average(tuples, new ArrayIntIterator(allIDs));           	
             	workingList.add(new Cluster(allIDs, center));
             
@@ -173,16 +173,18 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
             double progress = 0.0;
             final double perIterationProgress = 0.95/10.0;
             
+            long nanosForSplitting = 0L;
+            
             do {
 
                 initializeIteration(workingList);
                 
                 splits = 0;
-                currentClusters = new ArrayList<Cluster>();
+                currentClusters = new ArrayList<>();
 
                 final int numClusters = workingList.size();
                 
-                List<SplitCallable> splitterList = new ArrayList<SplitCallable>();
+                List<SplitCallable> splitterList = new ArrayList<>();
                 
                 for (int i=0; i<numClusters; i++) {
                     this.checkForCancel();
@@ -196,7 +198,9 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
 
                 if (splitterList.size() > 0) {
                     if (threadPool != null) {
+                        long nsStart = System.nanoTime();
                         List<Future<List<Cluster>>> results = threadPool.invokeAll(splitterList);
+                        nanosForSplitting += (System.nanoTime() - nsStart);
                         for (Future<List<Cluster>> result: results) {
                             List<Cluster> clist = result.get();
                             addToCurrentClusters(clist);
@@ -209,7 +213,9 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
                         }
                     } else {
                         for (SplitCallable sc: splitterList) {
+                            long nsStart = System.nanoTime();
                             List<Cluster> clist = sc.call();
+                            nanosForSplitting += (System.nanoTime() - nsStart);
                             addToCurrentClusters(clist);
                             if (clist.size() > 1) {
                                 incrementSplits();
@@ -223,7 +229,7 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
 
                 int newNumClusters = currentClusters.size();
 
-                workingList = new ArrayList<Cluster> (currentClusters);
+                workingList = new ArrayList<> (currentClusters);
                 
                 iteration++;
                 
@@ -249,10 +255,11 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
             for (int i=0; i<numClusters; i++) {
                 finalSeeds.setTuple(i, workingList.get(i).getCenter());
             }
-            
-            workingList = null;
+
             currentClusters = null;
             
+            ph.postMessage("total time splitting clusters: %.1f milliseconds", 
+                    ((double) nanosForSplitting)/(1024.0*1024.0));
             ph.postMessage("performing final round of k-means to polish up clusters");
             
             KMeansParams kparams = new KMeansParams.Builder()
@@ -297,7 +304,7 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
                 int intThreshold = (int) (0.5 + minThreshold * avgSize);
                 if (minSize < intThreshold) {
                     // Some clusters were too small.
-                    List<Cluster> bigEnough = new ArrayList<Cluster>(numClusters);
+                    List<Cluster> bigEnough = new ArrayList<>(numClusters);
                     for (int i=0; i<numClusters; i++) {
                         Cluster c = clusters.get(i);
                         if (c.getMemberCount() >= intThreshold) {
@@ -313,7 +320,7 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
                         finalSeeds.setTuple(i, bigEnough.get(i).getCenter());
                     }
                     
-                    ph.postMessage(String.valueOf(discard) + " clusters will be discarded because of size");
+                    ph.postMessage("%d clusters will be discarded because of size", discard);
                     
                     kparams.setClusterSeeder(new PreassignedSeeder(finalSeeds));
                     
@@ -390,7 +397,7 @@ public abstract class KMeansSplittingClusterer extends AbstractClusterer {
             this.splitter = splitter;
         }
 
-        public List<Cluster> call() throws Exception {
+        public List<Cluster> call() {
             return splitter.split(cluster);
         }
     }
