@@ -28,9 +28,11 @@
         <version.log4j>1.2.17</version.log4j>
         <version.slf4j>1.7.28</version.slf4j>
         <version.junit>4.12</version.junit>
+        <version.jupiter.junit>5.4.0-M1</version.jupiter.junit>
         <version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
         <version.maven-javadoc-plugin>3.1.1</version.maven-javadoc-plugin>
         <version.maven-source-plugin>3.1.0</version.maven-source-plugin>
+        <version.maven-surefire-plugin>3.0.0-M3</version.maven-surefire-plugin>
         <version.maven-gpg-plugin>1.6</version.maven-gpg-plugin>
     </properties>
 
@@ -110,7 +112,24 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin> 
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${version.maven-surefire-plugin}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.junit.jupiter</groupId>
+                        <artifactId>junit-jupiter-engine</artifactId>
+                        <version>${version.jupiter.junit}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.junit.vintage</groupId>
+                        <artifactId>junit-vintage-engine</artifactId>
+                        <version>${version.jupiter.junit}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
             <!-- Commenting out until time for the next snapshot deployment or release
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -174,7 +193,26 @@
                 <version>${version.log4j}</version>
             </dependency>
             -->
-            
+            <!-- To support junit5 tests -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${version.jupiter.junit}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${version.jupiter.junit}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.vintage</groupId>
+                <artifactId>junit-vintage-engine</artifactId>
+                <version>${version.jupiter.junit}</version>
+                <scope>test</scope>
+            </dependency>
+            <!-- To support the legacy tests -->
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>

@@ -15,13 +15,14 @@
  */
 package org.battelle.clodhopper.distance;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import org.junit.AfterClass;
-import static org.junit.Assert.assertTrue;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
@@ -41,7 +42,7 @@ public class DistanceComputationTest {
     private static double[][] tuples;
     private static long seed;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         metrics = Arrays.asList(
                 new CanberraDistanceMetric(),
@@ -49,7 +50,9 @@ public class DistanceComputationTest {
                 new CosineDistanceMetric(),
                 new EuclideanDistanceMetric(),
                 new ManhattanDistanceMetric(),
-                new TanimotoDistanceMetric()
+                new TanimotoDistanceMetric(),
+                new HammingDistanceMetric(),
+                new BrayCurtisDistanceMetric()
         );
         int numTuples = 100;
         int tupleLen = 10;
@@ -79,7 +82,7 @@ public class DistanceComputationTest {
         return (random.nextBoolean() ? +1.0 : -1.0) * 1000.0 * random.nextDouble();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
         metrics = null;
     }
@@ -89,12 +92,14 @@ public class DistanceComputationTest {
         for (int i = 0; i < tuples.length; i++) {
             for (int j = i; j < tuples.length; j++) {
                 for (DistanceMetric dm : metrics) {
-                    if (dm.getClass() == CosineDistanceMetric.class && (isZeroTuple(tuples[i]) || isZeroTuple(tuples[j]))) {
+                    if (dm.getClass() == CosineDistanceMetric.class &&
+                            (isZeroTuple(tuples[i]) || isZeroTuple(tuples[j]))) {
                         continue;
                     }
                     double dist = dm.distance(tuples[i], tuples[j]);
-                    assertTrue(String.format("failed for metric %s on tuple (%d, %d)", dm.getClass().getSimpleName(), i, j),
-                            dist >= -EPSILON);
+                    assertTrue(dist >= -EPSILON,
+                            String.format("failed for metric %s on tuple (%d, %d)",
+                                    dm.getClass().getSimpleName(), i, j));
                 }
             }
         }
@@ -105,8 +110,7 @@ public class DistanceComputationTest {
         for (int i = 0; i < tuples.length; i++) {
             for (DistanceMetric dm : metrics) {
                 double dist = dm.distance(tuples[i], tuples[i]);
-                assertTrue("failed for metric: " + dm.getClass().getSimpleName(),
-                        Math.abs(dist) <= EPSILON);
+                assertTrue(Math.abs(dist) <= EPSILON, "failed for metric: " + dm.getClass().getSimpleName());
             }
             for (int j = i + 1; j < tuples.length; j++) {
                 if (!Arrays.equals(tuples[i], tuples[j])) {
@@ -116,8 +120,7 @@ public class DistanceComputationTest {
                             continue;
                         }
                         double dist = dm.distance(tuples[i], tuples[j]);
-                        assertTrue("failed for metric: " + dm.getClass().getSimpleName(),
-                                dist > -EPSILON);
+                        assertTrue(dist > -EPSILON, "failed for metric: " + dm.getClass().getSimpleName());
                     }
                 }
             }
@@ -135,8 +138,7 @@ public class DistanceComputationTest {
                     }
                     double dist1 = dm.distance(tuples[i], tuples[j]);
                     double dist2 = dm.distance(tuples[j], tuples[i]);
-                    assertTrue("failed for metric: " + dm.getClass().getSimpleName(),
-                            dist1 == dist2);
+                    assertTrue(dist1 == dist2, "failed for metric: " + dm.getClass().getSimpleName());
                 }
             }
         }

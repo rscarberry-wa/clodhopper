@@ -54,4 +54,18 @@ public interface DistanceMetric extends Cloneable {
      */
     DistanceMetric clone();
 
+    /**
+     * Utility for checking that tuple lengths match
+     * @param tuple1 the first tuple
+     * @param tuple2 the second tuple
+     * @throws IllegalArgumentException if their lengths do not match.
+     * @throws NullPointerException if either are null.
+     */
+    default void checkSameLength(double[] tuple1, double[] tuple2) {
+        if (tuple1.length != tuple2.length) {
+            throw new IllegalArgumentException(String.format(
+                    "tuple1.length != tuple2.length: %d != %d",
+                    tuple1.length, tuple2.length));
+        }
+    }
 }
