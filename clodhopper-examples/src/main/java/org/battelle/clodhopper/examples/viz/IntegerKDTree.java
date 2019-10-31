@@ -518,7 +518,7 @@ public class IntegerKDTree {
     	}
 
     	// Component of coords to use for splitting.
-    	int s = level%dim;
+    	final int s = level%dim;
 
     	int[] curCoords = new int[dim];
     	for (int i=0; i<dim; i++) {
