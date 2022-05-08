@@ -1,6 +1,8 @@
 package org.battelle.clodhopper;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /*=====================================================================
  * 
@@ -47,7 +49,10 @@ public interface ClusterSplitter {
      * 
      * @return true if the cluster can be split.
      */
-    boolean canSplit(Cluster cluster);
+    default boolean canSplit(Cluster cluster) {
+        Objects.requireNonNull(cluster);
+        return cluster.getMemberCount() > 1;
+    }
 
     /**
      * Returns true if this splitter prefers the clusters resulting from the
@@ -63,10 +68,29 @@ public interface ClusterSplitter {
     /**
      * Split the specified cluster, returning the split clusters in a list.
      *
-     * @param cluster the cluster to be split.
+     * @param cluster the cluster to be split, which should never be null.
      * 
-     * @return a list of clusters resulting from the split.
+     * @return a list of clusters resulting from the split, which should never be null.
      */
-    List<Cluster> split(Cluster cluster);
+    default List<Cluster> split(Cluster cluster) {
+        Objects.requireNonNull(cluster);
+        if (canSplit(cluster)) {
+            List<Cluster> children = performSplit(cluster);
+            int childCount = children != null ? children.size() : 0;
+            if (childCount >= 2 && prefersSplit(cluster, children)) {
+                return children;
+            }
+        }
+        return Collections.singletonList(cluster);
+    }
 
+    /**
+     * Implementations should perform the actual splitting of
+     * a cluster in this method.
+     *
+     * @param cluster the <code>Cluster</code> to split.
+     *
+     * @return a list of clusters derived by splitting the source cluster.
+     */
+    List<Cluster> performSplit(Cluster cluster);
 }

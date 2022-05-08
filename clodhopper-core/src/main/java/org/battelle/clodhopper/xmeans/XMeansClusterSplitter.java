@@ -2,8 +2,8 @@ package org.battelle.clodhopper.xmeans;
 
 import java.util.*;
 
-import org.battelle.clodhopper.AbstractClusterSplitter;
 import org.battelle.clodhopper.Cluster;
+import org.battelle.clodhopper.ClusterSplitter;
 import org.battelle.clodhopper.ClusterStats;
 import org.battelle.clodhopper.kmeans.KMeansClusterer;
 import org.battelle.clodhopper.kmeans.KMeansParams;
@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * XMeansClusterSplitter.java
  *
  *===================================================================*/
-public class XMeansClusterSplitter extends AbstractClusterSplitter {
+public class XMeansClusterSplitter implements ClusterSplitter {
 
     private static Logger LOGGER = LoggerFactory.getLogger(XMeansClusterSplitter.class);
 

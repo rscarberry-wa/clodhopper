@@ -5,8 +5,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.battelle.clodhopper.AbstractClusterSplitter;
 import org.battelle.clodhopper.Cluster;
+import org.battelle.clodhopper.ClusterSplitter;
 import org.battelle.clodhopper.ClusterStats;
 import org.battelle.clodhopper.kmeans.KMeansClusterer;
 import org.battelle.clodhopper.kmeans.KMeansParams;
@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
  * @since 1.0
  *
  */
-public class GMeansClusterSplitter extends AbstractClusterSplitter {
+public class GMeansClusterSplitter implements ClusterSplitter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GMeansClusterSplitter.class);
 
