@@ -725,7 +725,7 @@ public class ClodHopperUI extends JFrame implements SelectionListener {
             if (outcome == TaskOutcome.SUCCESS) {
                 if (task instanceof Clusterer) {
                     Clusterer clusterer = (Clusterer) task;
-                    clusters = clusterer.getClusters();
+                    clusters = clusterer.getClusters().get();
                     // Copy the tuples, since projection may modify them. Keep
                     // the originals
                     // unmodified in case we recluster.

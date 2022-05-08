@@ -1,6 +1,7 @@
 package org.battelle.clodhopper;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.battelle.clodhopper.task.Task;
 
@@ -44,11 +45,11 @@ public interface Clusterer extends Task<List<Cluster>> {
     /**
      * Convenience method for using in place of get(). This is just like get(),
      * but does not throw exceptions. If an error occurs, this method simply
-     * returns null. You should only call this method after the clusterer has
-     * finished with a successful outcome.
+     * returns an empty optional. To receive a meaningful result, only call this method
+     * after the clusterer has finished with a successful outcome.
      *
-     * @return the list of <code>Cluster</code>s generated.
+     * @return an {@link Optional} wrapping the list of <code>Cluster</code>s generated.
      */
-    List<Cluster> getClusters();
+    Optional<List<Cluster>> getClusters();
 
 }
