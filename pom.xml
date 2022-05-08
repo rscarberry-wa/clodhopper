@@ -26,14 +26,14 @@
         <version.trove4j>3.0.3</version.trove4j>
         <version.commons-math3>3.6.1</version.commons-math3>
         <version.log4j>1.2.17</version.log4j>
-        <version.slf4j>1.7.28</version.slf4j>
+        <version.slf4j>1.7.36</version.slf4j>
         <version.junit>4.12</version.junit>
-        <version.jupiter.junit>5.4.0-M1</version.jupiter.junit>
-        <version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
-        <version.maven-javadoc-plugin>3.1.1</version.maven-javadoc-plugin>
-        <version.maven-source-plugin>3.1.0</version.maven-source-plugin>
-        <version.maven-surefire-plugin>3.0.0-M3</version.maven-surefire-plugin>
-        <version.maven-gpg-plugin>1.6</version.maven-gpg-plugin>
+        <version.jupiter.junit>5.8.2</version.jupiter.junit>
+        <version.maven-compiler-plugin>3.10.1</version.maven-compiler-plugin>
+        <version.maven-javadoc-plugin>3.4.0</version.maven-javadoc-plugin>
+        <version.maven-source-plugin>3.2.1</version.maven-source-plugin>
+        <version.maven-surefire-plugin>2.22.2</version.maven-surefire-plugin>
+        <version.maven-gpg-plugin>3.0.1</version.maven-gpg-plugin>
     </properties>
 
     <licenses>
@@ -77,8 +77,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${version.maven-compiler-plugin}</version>
                 <configuration>
-                    <source>9</source>
-                    <target>9</target>
+                    <source>17</source>
+                    <target>17</target>
                 </configuration>
             </plugin>
             <!--
