@@ -16,7 +16,8 @@
 package org.battelle.clodhopper;
 
 /**
- * 
+ * Checked exception class to indicate when something goes wrong during clustering.
+ *
  * @author R.Scarberry
  */
 public class ClusteringException extends Exception {

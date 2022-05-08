@@ -98,7 +98,7 @@ public class Cluster {
      * returns a protected copy.
      */
     public double[] getCenter() {
-        return (double[]) center.clone();
+        return center.clone();
     }
 
     /**
@@ -154,14 +154,14 @@ public class Cluster {
         if (o == this) {
             return true;
         }
-        if (o instanceof Cluster) {
+        if (o != null && o.getClass() == this.getClass()) {
             Cluster that = (Cluster) o;
             final int memCount = this.getMemberCount();
             final int centerLen = this.getCenterLength();
             if (memCount != that.getMemberCount() || centerLen != that.getCenterLength()) {
                 return false;
             }
-	    // Because of the sort of the ids in the constructor, this comparison does not
+	        // Because of the sort of the ids in the constructor, this comparison does not
             // have to worry about the same ids being in a different order.
             return Arrays.equals(this.ids, that.ids) && Arrays.equals(this.center, that.center);
         }
