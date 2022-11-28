@@ -11,7 +11,8 @@ import javax.swing.*;
 import org.battelle.clodhopper.Cluster;
 import org.battelle.clodhopper.Clusterer;
 import org.battelle.clodhopper.distance.EuclideanDistanceMetric;
-import org.battelle.clodhopper.examples.TupleGenerator;
+import org.battelle.clodhopper.examples.ClusteredTuples;
+import org.battelle.clodhopper.examples.NormalTupleGenerator;
 import org.battelle.clodhopper.examples.data.ExampleData;
 import org.battelle.clodhopper.examples.project.Projection;
 import org.battelle.clodhopper.examples.project.ProjectionParams;
@@ -99,7 +100,7 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
 
     private Task<?> mCurrentTask;
 
-    private TupleList tupleList;
+    private ClusteredTuples generatedClusteredTuples;
 
     public KMeansDemo() {
         this(DEFAULT_COORDS, DEFAULT_DIMENSIONS, DEFAULT_CLUSTERS, 1234L,
@@ -304,7 +305,7 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
 
                 mResultsTA.setText("");
 
-                final TupleGenerator genTask = new TupleGenerator(mNumDimensions, mNumCoords, 
+                final NormalTupleGenerator genTask = new NormalTupleGenerator(mNumDimensions, mNumCoords,
                 		mNumClusters, 4.0, mStandardDev, mStandardDev, new Random(mSeed));  
                 
                 genTask.addTaskListener(this);
@@ -492,7 +493,7 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
         	
         	KMeansParams params = new KMeansParams.Builder().clusterCount(mNumClusters).clusterSeeder(seeder).workerThreadCount(mNumProcessors).build();
         	
-        	clusterer = new KMeansClusterer(tupleList, params);
+        	clusterer = new KMeansClusterer(generatedClusteredTuples.getTuples(), params);
         	
             mCurrentGalaxy = mXMeansGalaxy;
         }
@@ -501,7 +502,7 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
     }
 
     private Projector setupNextProjectionTask(java.util.List<Cluster> clusters) {
-        return new Projector(copyTuples(tupleList), clusters, new ProjectionParams());
+        return new Projector(copyTuples(generatedClusteredTuples.getTuples()), clusters, new ProjectionParams());
     }
     
     private static TupleList copyTuples(TupleList tuples) {
@@ -605,14 +606,14 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
         Task<?> task = e.getTask();
         org.battelle.clodhopper.task.TaskOutcome outcome = task.getTaskOutcome();
 
-        if (task instanceof TupleGenerator) {
+        if (task instanceof NormalTupleGenerator) {
         
             if (outcome == TaskOutcome.SUCCESS) {
                 
-                TupleGenerator genTask = (TupleGenerator) task;
+                NormalTupleGenerator genTask = (NormalTupleGenerator) task;
                           
                 try {
-					tupleList = genTask.get();
+					generatedClusteredTuples = genTask.get();
 				} catch (InterruptedException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -629,7 +630,7 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
                 
                 mBeginProgress += GENERATION_PROGRESS_INC;
                 
-                Projector projectionTask = setupNextProjectionTask(genTask.getClusters());
+                Projector projectionTask = setupNextProjectionTask(generatedClusteredTuples.getClusters());
                 
                 projectionTask.setProgressEndpoints(mBeginProgress,
                     mBeginProgress + PROJECTION_PROGRESS_INC);
@@ -648,7 +649,8 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
 
                 if (mCurrentGalaxy != null) {
                 	
-                	ExampleData dataset = new ExampleData(tupleList, clusters, pdata, projector.getClusterProjection());
+                	ExampleData dataset = new ExampleData(generatedClusteredTuples.getTuples(),
+                            clusters, pdata, projector.getClusterProjection());
                     dataset.getTupleSelectionModel().addSelectionListener(this);
                     
                     ExampleData oldDataset = mCurrentGalaxy.getDataset();

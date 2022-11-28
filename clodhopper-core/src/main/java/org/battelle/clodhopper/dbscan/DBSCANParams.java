@@ -5,7 +5,15 @@ import org.battelle.clodhopper.distance.EuclideanDistanceMetric;
 
 import java.util.Objects;
 
+/**
+ * Holds the parameters for DBSCAN (Density-Based Spatial Clustering of Applications with Noise).
+ * DBSCAN relies on only 2 parameters other than a distance metric: an epsilon distance and the
+ * minimum number of samples.
+ */
 public class DBSCANParams {
+
+    public static final double DEFAULT_EPSILON = 0.5;
+    public static final int DEFAULT_MIN_SAMPLES = 5;
 
     private final double epsilon;
     private final int minSamples;
@@ -13,7 +21,7 @@ public class DBSCANParams {
     private final DistanceMetric distanceMetric;
 
     public DBSCANParams() {
-        this(0.5, 5, new EuclideanDistanceMetric());
+        this(DEFAULT_EPSILON, DEFAULT_MIN_SAMPLES, new EuclideanDistanceMetric());
     }
 
     public DBSCANParams(double epsilon, int minSamples, DistanceMetric distanceMetric) {

@@ -7,10 +7,10 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class BrayCurtisDistanceMetricTest {
+public class BrayCurtisDistanceMetricTest {
 
     @Test
-    void testDistance() {
+    public void testDistance() {
 
         BrayCurtisDistanceMetric bc = new BrayCurtisDistanceMetric();
 

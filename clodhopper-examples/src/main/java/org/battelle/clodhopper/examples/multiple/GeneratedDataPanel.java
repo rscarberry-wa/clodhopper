@@ -36,7 +36,8 @@ import javax.swing.border.BevelBorder;
 import org.battelle.clodhopper.Cluster;
 import org.battelle.clodhopper.Clusterer;
 import org.battelle.clodhopper.distance.EuclideanDistanceMetric;
-import org.battelle.clodhopper.examples.TupleGenerator;
+import org.battelle.clodhopper.examples.ClusteredTuples;
+import org.battelle.clodhopper.examples.NormalTupleGenerator;
 import org.battelle.clodhopper.examples.data.ExampleData;
 import org.battelle.clodhopper.examples.project.Projection;
 import org.battelle.clodhopper.examples.project.ProjectionParams;
@@ -157,7 +158,7 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 
 	private Task<?> mCurrentTask;
 
-	private TupleList mCoordinateList;
+	private ClusteredTuples mGeneratedClusteredTuples;
 
 	public GeneratedDataPanel() {
 		this(DEFAULT_COORDS, DEFAULT_DIMENSIONS, DEFAULT_CLUSTERS, 1234L,
@@ -394,7 +395,7 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 
 				mResultsTA.setText("");
 
-				TupleGenerator genTask = new TupleGenerator(mNumDimensions,
+				NormalTupleGenerator genTask = new NormalTupleGenerator(mNumDimensions,
 						mNumCoords, mNumClusters, 4.0, mStandardDev,
 						mStandardDev, new Random(mSeed));
 
@@ -542,7 +543,7 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 							new KMeansPlusPlusSeeder(mSeed, new Random(),
 									new EuclideanDistanceMetric())).build();
 
-			clusterTask = new KMeansClusterer(mCoordinateList, params);
+			clusterTask = new KMeansClusterer(mGeneratedClusteredTuples.getTuples(), params);
 
 			mCurrentGalaxy = mKMeansClusterData;
 
@@ -556,7 +557,7 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 							new KMeansPlusPlusSeeder(mSeed, new Random(),
 									new EuclideanDistanceMetric())).build();
 
-			clusterTask = new XMeansClusterer(mCoordinateList, params);
+			clusterTask = new XMeansClusterer(mGeneratedClusteredTuples.getTuples(), params);
 
 			mCurrentGalaxy = mXMeansClusterData;
 
@@ -569,7 +570,7 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 							new KMeansPlusPlusSeeder(mSeed, new Random(),
 									new EuclideanDistanceMetric())).build();
 
-			clusterTask = new GMeansClusterer(mCoordinateList, params);
+			clusterTask = new GMeansClusterer(mGeneratedClusteredTuples.getTuples(), params);
 
 			mCurrentGalaxy = mGMeansClusterData;
 
@@ -581,7 +582,7 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 					.distanceMetric(new EuclideanDistanceMetric())
 					.linkage(HierarchicalParams.Linkage.COMPLETE).build();
 
-			clusterTask = new StandardHierarchicalClusterer(mCoordinateList,
+			clusterTask = new StandardHierarchicalClusterer(mGeneratedClusteredTuples.getTuples(),
 					params);
 
 			mCurrentGalaxy = mHierarchicalClusterData;
@@ -594,7 +595,7 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 					.distanceMetric(new EuclideanDistanceMetric())
 					.linkage(HierarchicalParams.Linkage.COMPLETE).build();
 
-			clusterTask = new ReverseNNHierarchicalClusterer(mCoordinateList,
+			clusterTask = new ReverseNNHierarchicalClusterer(mGeneratedClusteredTuples.getTuples(),
 					params);
 
 			mCurrentGalaxy = mWardsClusterData;
@@ -609,7 +610,7 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 							new KMeansPlusPlusSeeder(mSeed, new Random(),
 									new EuclideanDistanceMetric())).build();
 
-			clusterTask = new FuzzyCMeansClusterer(mCoordinateList, params);
+			clusterTask = new FuzzyCMeansClusterer(mGeneratedClusteredTuples.getTuples(), params);
 
 			mCurrentGalaxy = mFuzzyCMeansClusterData;
 		}
@@ -618,7 +619,7 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 	}
 
 	private Projector setupNextProjectionTask(java.util.List<Cluster> clusters) {
-		return new Projector(copyTuples(mCoordinateList), clusters,
+		return new Projector(copyTuples(mGeneratedClusteredTuples.getTuples()), clusters,
 				new ProjectionParams());
 	}
 
@@ -655,14 +656,14 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 		Task<?> task = e.getTask();
 		TaskOutcome outcome = task.getTaskOutcome();
 
-		if (task instanceof TupleGenerator) {
+		if (task instanceof NormalTupleGenerator) {
 
 			if (outcome == TaskOutcome.SUCCESS) {
 
-				TupleGenerator genTask = (TupleGenerator) task;
+				NormalTupleGenerator genTask = (NormalTupleGenerator) task;
 
 				try {
-					mCoordinateList = genTask.get();
+					mGeneratedClusteredTuples = genTask.get();
 				} catch (InterruptedException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -673,8 +674,7 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 
 				mBeginProgress += GENERATION_PROGRESS_INC;
 
-				Projector projectionTask = setupNextProjectionTask(genTask
-						.getClusters());
+				Projector projectionTask = setupNextProjectionTask(mGeneratedClusteredTuples.getClusters());
 				projectionTask.setProgressEndpoints(mBeginProgress,
 						mBeginProgress + PROJECTION_PROGRESS_INC);
 
@@ -690,7 +690,7 @@ public class GeneratedDataPanel extends JPanel implements TaskListener,
 				Projection pdata = projTask.getPointProjection();
 
 				if (mCurrentGalaxy != null) {
-					ExampleData dataset = new ExampleData(mCoordinateList,
+					ExampleData dataset = new ExampleData(mGeneratedClusteredTuples.getTuples(),
 							clusters, pdata, projTask.getClusterProjection());
 					dataset.getTupleSelectionModel().addSelectionListener(this);
 					if (mCurrentGalaxy.getDataset() != null) {

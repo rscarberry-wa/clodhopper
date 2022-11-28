@@ -15,7 +15,7 @@ import org.battelle.clodhopper.tuple.TupleList;
 import org.battelle.clodhopper.tuple.TupleMath;
 import org.battelle.clodhopper.util.ArrayIntIterator;
 
-public class TupleGenerator extends AbstractTask<TupleList> {
+public class NormalTupleGenerator extends AbstractTask<ClusteredTuples> {
 
 	private int tupleLength;
 	private int tupleCount;
@@ -25,10 +25,7 @@ public class TupleGenerator extends AbstractTask<TupleList> {
 	private double standardDev;
 	private double standardDevStandardDev;
 	
-	private TupleList tuples;
-	private List<Cluster> clusters;
-	
-	public TupleGenerator(
+	public NormalTupleGenerator(
 			int tupleLength, 
 			int tupleCount, 
 			int clusterCount,
@@ -46,7 +43,7 @@ public class TupleGenerator extends AbstractTask<TupleList> {
 	}
 	
 	@Override
-	protected TupleList doTask() throws Exception {
+	protected ClusteredTuples doTask() throws Exception {
         
         ProgressHandler ph = new ProgressHandler(this, tupleCount);
         ph.postBegin();
@@ -145,22 +142,11 @@ public class TupleGenerator extends AbstractTask<TupleList> {
         	clusts.add(new Cluster(members, TupleMath.average(data, new ArrayIntIterator(members))));
         }
         
-        tuples = data;
-        clusters = clusts;
-        
         ph.postEnd();
         
-        return tuples;
+        return new ClusteredTuples(data, clusts);
 	}
 
-	public TupleList getTuples() {
-		return tuples;
-	}
-	
-	public List<Cluster> getClusters() {
-		return clusters;
-	}
-	
 	@Override
 	public String taskName() {
 		return "random gaussian tuple and cluster generation";

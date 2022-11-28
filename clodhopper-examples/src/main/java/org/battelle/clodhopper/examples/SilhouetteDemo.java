@@ -32,7 +32,7 @@ public class SilhouetteDemo {
         final double standardDev = 1.0;
         final double standardDevStandardDev = 1.0;
         
-        TupleGenerator tupleGenerator = new TupleGenerator(
+        NormalTupleGenerator tupleGenerator = new NormalTupleGenerator(
                 tupleLen,
                 numTuples,
                 numClusters,

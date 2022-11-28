@@ -7,7 +7,8 @@ import java.util.concurrent.ExecutionException;
 import org.battelle.clodhopper.Cluster;
 import org.battelle.clodhopper.Clusterer;
 import org.battelle.clodhopper.distance.DistanceMetric;
-import org.battelle.clodhopper.examples.TupleGenerator;
+import org.battelle.clodhopper.examples.ClusteredTuples;
+import org.battelle.clodhopper.examples.NormalTupleGenerator;
 import org.battelle.clodhopper.seeding.ClusterSeeder;
 import org.battelle.clodhopper.task.*;
 import org.battelle.clodhopper.tuple.ArrayTupleList;
@@ -132,7 +133,7 @@ public class SimpleXMeansDemo {
     return clusters;
   }
   
-  public static void main(String[] args) {
+  public static void main(String[] args) throws ExecutionException, InterruptedException {
     
     // Generate some test data using a TupleGenerator. This is randomly-generated data having the
     // characteristics we request.
@@ -151,7 +152,7 @@ public class SimpleXMeansDemo {
     
     // This is a task mean to be executed on a background thread, but we'll be sleazy and call its 
     // run method directly for this example.
-    TupleGenerator tupleGenerator = new TupleGenerator(tupleLength, tupleCount, clusterCount, 
+    NormalTupleGenerator tupleGenerator = new NormalTupleGenerator(tupleLength, tupleCount, clusterCount,
         clusterMultiplier, standardDev, standardDev, new Random());
     
     // Not normally done for a long running task.  It'll block until finished.
@@ -161,8 +162,9 @@ public class SimpleXMeansDemo {
     // Before getting the data, check the outcome.
     //
     if (tupleGenerator.getTaskOutcome() == TaskOutcome.SUCCESS) {
-      
-      TupleList tuples = tupleGenerator.getTuples();
+
+      ClusteredTuples generatedClusteredTuples = tupleGenerator.get();
+      TupleList tuples = generatedClusteredTuples.getTuples();
       
       // Place the data into a 1-D array in order to call the demo method.
       //
