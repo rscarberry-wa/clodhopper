@@ -15,6 +15,8 @@
  */
 package org.battelle.clodhopper.examples;
 
+import org.battelle.clodhopper.examples.generation.NormalTupleGenerator;
+
 import java.util.Random;
 
 /**

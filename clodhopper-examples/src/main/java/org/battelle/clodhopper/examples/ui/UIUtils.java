@@ -6,8 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.swing.JComponent;
-import javax.swing.JOptionPane;
+import javax.swing.*;
 import javax.swing.text.JTextComponent;
 
 import org.battelle.clodhopper.distance.CanberraDistanceMetric;
@@ -409,4 +408,80 @@ public final class UIUtils {
 		sb.append("</html>");
 		return sb.toString();
 	}
+
+	/**
+	 * Method for validating entries typed into text fields.
+	 * @param tf the text field to validate.
+	 * @param min the minimum value.
+	 * @param max the maximum value.
+	 * @return the entered value.
+	 */
+	public static int getEnteredValue(final JTextField tf, final int min, final int max) {
+		int value = 0;
+		String s = tf.getText().trim();
+		if (s.length() == 0) {
+			throw new RuntimeException("blank entry");
+		}
+		try {
+			value = Integer.parseInt(s);
+			if (value < min || value > max) {
+				throw new RuntimeException("outside range [" + min + " - "
+						+ max + "]: " + value);
+			}
+		} catch (NumberFormatException nfe) {
+			throw new RuntimeException("invalid number: " + s);
+		}
+		return value;
+	}
+
+	/**
+	 * Method for validating entries typed into text fields.
+	 * @param tf the text field to validate.
+	 * @param min the minimum value.
+	 * @param max the maximum value.
+	 * @return the entered value.
+	 */
+	public static long getEnteredValue(final JTextField tf, final long min, final long max) {
+		long value = 0L;
+		String s = tf.getText().trim();
+		if (s.length() == 0) {
+			throw new RuntimeException("blank entry");
+		}
+		try {
+			value = Long.parseLong(s);
+			if (value < min || value > max) {
+				throw new RuntimeException("outside range [" + min + " - "
+						+ max + "]: " + value);
+			}
+		} catch (NumberFormatException nfe) {
+			throw new RuntimeException("invalid number: " + s);
+		}
+		return value;
+	}
+
+	/**
+	 * Method for validating entries typed into text fields.
+	 * @param tf the text field to validate.
+	 * @param min the minimum value.
+	 * @param max the maximum value.
+	 * @return the entered value.
+	 */
+	public static double getEnteredValue(final JTextField tf, final double min, final double max) {
+		double value = 0;
+		String s = tf.getText().trim();
+		if (s.length() == 0) {
+			throw new RuntimeException("blank entry");
+		}
+		try {
+			value = Double.parseDouble(s);
+			if (value < min || value > max) {
+				throw new RuntimeException("outside range [" + min + " - "
+						+ max + "]: " + value);
+			}
+		} catch (NumberFormatException nfe) {
+			throw new RuntimeException("invalid number: " + s);
+		}
+		return value;
+	}
+
 }

@@ -1,4 +1,4 @@
-package org.battelle.clodhopper.examples;
+package org.battelle.clodhopper.examples.generation;
 
 import org.battelle.clodhopper.Cluster;
 import org.battelle.clodhopper.tuple.TupleList;

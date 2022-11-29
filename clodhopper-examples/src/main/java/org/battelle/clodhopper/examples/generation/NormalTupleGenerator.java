@@ -1,4 +1,4 @@
-package org.battelle.clodhopper.examples;
+package org.battelle.clodhopper.examples.generation;
 
 import gnu.trove.list.array.TIntArrayList;
 

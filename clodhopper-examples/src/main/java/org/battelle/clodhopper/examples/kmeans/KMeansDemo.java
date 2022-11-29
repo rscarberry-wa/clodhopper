@@ -11,8 +11,8 @@ import javax.swing.*;
 import org.battelle.clodhopper.Cluster;
 import org.battelle.clodhopper.Clusterer;
 import org.battelle.clodhopper.distance.EuclideanDistanceMetric;
-import org.battelle.clodhopper.examples.ClusteredTuples;
-import org.battelle.clodhopper.examples.NormalTupleGenerator;
+import org.battelle.clodhopper.examples.generation.ClusteredTuples;
+import org.battelle.clodhopper.examples.generation.NormalTupleGenerator;
 import org.battelle.clodhopper.examples.data.ExampleData;
 import org.battelle.clodhopper.examples.project.Projection;
 import org.battelle.clodhopper.examples.project.ProjectionParams;
@@ -31,6 +31,7 @@ import org.battelle.clodhopper.task.TaskOutcome;
 import org.battelle.clodhopper.tuple.ArrayTupleList;
 import org.battelle.clodhopper.tuple.TupleList;
 import org.battelle.clodhopper.util.IntIterator;
+import static org.battelle.clodhopper.examples.ui.UIUtils.*;
 
 public class KMeansDemo extends JPanel implements TaskListener, SelectionListener {
 
@@ -93,8 +94,6 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
 
     private ScatterPlot2D mGeneratedGalaxy, mXMeansGalaxy;
 
-    private java.util.List<Cluster> mGeneratedClusters;
-    
     // Set to true when kmeans is running
     private boolean mRunning;
 
@@ -293,7 +292,7 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
                         .getRuntime().availableProcessors());
                 mStandardDev = getEnteredValue(mStandardDevTF, 0.0, 1.0);
 
-                mGeneratedClusters = null;
+                generatedClusteredTuples = null;
 
                 // Clear the plots of data.
                 mGeneratedGalaxy.setDataset(null);
@@ -377,82 +376,7 @@ public class KMeansDemo extends JPanel implements TaskListener, SelectionListene
                 JOptionPane.ERROR_MESSAGE);
     }
 
-    /**
-     * Method for validating entries typed into text fields.
-     * @param tf the text field to validate.
-     * @param min the minimum value.
-     * @param max the maximum value.
-     * @return the entered value.
-     */
-    private static int getEnteredValue(final JTextField tf, final int min, final int max) {
-        int value = 0;
-        String s = tf.getText().trim();
-        if (s.length() == 0) {
-            throw new RuntimeException("blank entry");
-        }
-        try {
-            value = Integer.parseInt(s);
-            if (value < min || value > max) {
-                throw new RuntimeException("outside range [" + min + " - "
-                        + max + "]: " + value);
-            }
-        } catch (NumberFormatException nfe) {
-            throw new RuntimeException("invalid number: " + s);
-        }
-        return value;
-    }
-
-    /**
-     * Method for validating entries typed into text fields.
-     * @param tf the text field to validate.
-     * @param min the minimum value.
-     * @param max the maximum value.
-     * @return the entered value.
-     */
-    private static long getEnteredValue(final JTextField tf, final long min, final long max) {
-        long value = 0L;
-        String s = tf.getText().trim();
-        if (s.length() == 0) {
-            throw new RuntimeException("blank entry");
-        }
-        try {
-            value = Long.parseLong(s);
-            if (value < min || value > max) {
-                throw new RuntimeException("outside range [" + min + " - "
-                        + max + "]: " + value);
-            }
-        } catch (NumberFormatException nfe) {
-            throw new RuntimeException("invalid number: " + s);
-        }
-        return value;
-    }
-
-    /**
-     * Method for validating entries typed into text fields.
-     * @param tf the text field to validate.
-     * @param min the minimum value.
-     * @param max the maximum value.
-     * @return the entered value.
-     */
-    private static double getEnteredValue(final JTextField tf, final double min, final double max) {
-        double value = 0;
-        String s = tf.getText().trim();
-        if (s.length() == 0) {
-            throw new RuntimeException("blank entry");
-        }
-        try {
-            value = Double.parseDouble(s);
-            if (value < min || value > max) {
-                throw new RuntimeException("outside range [" + min + " - "
-                        + max + "]: " + value);
-            }
-        } catch (NumberFormatException nfe) {
-            throw new RuntimeException("invalid number: " + s);
-        }
-        return value;
-    }
-
-    // Creates a new cluster list by sorting the clusters in the source 
+    // Creates a new cluster list by sorting the clusters in the source
     // using a CenterComparator.  This makes the plots have more 
     // consistent colors when two clustering methods give very similar results.
     private static java.util.List<Cluster> rearrangeClusters(java.util.List<Cluster> source) {
